@@ -40,10 +40,10 @@ class SupplierFraudDetectionApp {
             logoutBtn.addEventListener('click', () => this.handleLogout());
         }
 
-        // Payment validation form with enhanced UX
-        const validationForm = document.getElementById('paymentValidationForm');
-        if (validationForm) {
-            validationForm.addEventListener('submit', (e) => this.handlePaymentValidation(e));
+        // Fraud detection form with enhanced UX
+        const fraudDetectionForm = document.getElementById('fraudDetectionForm');
+        if (fraudDetectionForm) {
+            fraudDetectionForm.addEventListener('submit', (e) => this.handleFraudDetection(e));
             
             // Real-time IBAN validation
             const ibanInput = document.getElementById('supplierIban');
@@ -248,7 +248,7 @@ class SupplierFraudDetectionApp {
         this.animateLogout();
     }
 
-    async handlePaymentValidation(e) {
+    async handleFraudDetection(e) {
         e.preventDefault();
         
         if (!this.authToken) {
@@ -273,13 +273,12 @@ class SupplierFraudDetectionApp {
         }
 
         const formData = {
-            supplierIban: document.getElementById('supplierIban').value.trim(),
             invoiceId: document.getElementById('invoiceId').value.trim(),
+            supplierIban: document.getElementById('supplierIban').value.trim(),
+            amount: parseFloat(document.getElementById('amount').value),
             supplierName: document.getElementById('supplierName').value.trim(),
-            paymentAmount: parseFloat(document.getElementById('paymentAmount').value),
-            currency: document.getElementById('currency').value,
-            invoiceNumber: document.getElementById('invoiceNumber').value.trim(),
-            supplierReference: document.getElementById('supplierReference').value.trim()
+            supplierCountry: document.getElementById('supplierCountry').value.trim() || null,
+            paymentPurpose: document.getElementById('paymentPurpose').value.trim() || null
         };
 
         try {
@@ -292,7 +291,7 @@ class SupplierFraudDetectionApp {
             `;
 
             const startTime = performance.now();
-            const response = await fetch(`${this.apiBaseUrl}/v1/suppliers/validate-payment`, {
+            const response = await fetch(`${this.apiBaseUrl}/v1/fraud-detection/validate-payment`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -314,19 +313,23 @@ class SupplierFraudDetectionApp {
                 this.addToRecentValidations(data);
                 this.updateStats(data);
                 
-                if (data.acceptableResponseTime) {
-                    this.showMessage('Payment validation completed successfully!', 'success');
+                if (data.riskStatus === 'ALLOW') {
+                    this.showMessage('Fraud analysis completed - Payment can be processed!', 'success');
+                } else if (data.riskStatus === 'REVIEW') {
+                    this.showMessage('Fraud analysis completed - Manual review recommended', 'warning');
+                } else if (data.riskStatus === 'BLOCK') {
+                    this.showMessage('Fraud analysis completed - Payment should be blocked', 'error');
                 } else {
-                    this.showMessage('Validation completed but response time exceeded 200ms', 'warning');
+                    this.showMessage('Fraud analysis completed', 'info');
                 }
                 
                 this.animateValidationSuccess();
             } else {
-                this.showMessage(data.error || 'Payment validation failed', 'error');
+                this.showMessage(data.error || 'Fraud analysis failed', 'error');
                 this.animateValidationError();
             }
         } catch (error) {
-            this.showMessage('Network error: Unable to validate payment', 'error');
+            this.showMessage('Network error: Unable to analyze payment for fraud', 'error');
             console.error('Validation error:', error);
         } finally {
             this.showLoading(false);
@@ -336,41 +339,45 @@ class SupplierFraudDetectionApp {
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                Validate Payment
+                Analyze for Fraud
             `;
         }
     }
 
     displayValidationResult(data) {
         const resultsDiv = document.getElementById('results');
-        const fraudStatusSpan = document.getElementById('fraudStatus');
+        const riskStatusSpan = document.getElementById('riskStatus');
         const riskLevelSpan = document.getElementById('riskLevel');
         const invoiceIdSpan = document.getElementById('resultInvoiceId');
         const supplierNameSpan = document.getElementById('resultSupplierName');
         const supplierIbanSpan = document.getElementById('resultSupplierIban');
-        const recommendationSpan = document.getElementById('recommendation');
-        const responseTimeSpan = document.getElementById('responseTime');
-        const timestampSpan = document.getElementById('timestamp');
+        const amountSpan = document.getElementById('resultAmount');
+        const riskStatusTextSpan = document.getElementById('riskStatusText');
+        const reasonSpan = document.getElementById('reason');
+        const transactionIdSpan = document.getElementById('transactionId');
+        const manualReviewSpan = document.getElementById('manualReview');
         const anomaliesList = document.getElementById('anomaliesList');
 
-        // Update fraud status with animation
-        fraudStatusSpan.textContent = data.fraudStatus;
-        fraudStatusSpan.className = `fraud-status ${data.fraudStatus}`;
+        // Update risk status with animation
+        riskStatusSpan.textContent = data.riskStatus;
+        riskStatusSpan.className = `fraud-status ${data.riskStatus}`;
         
         // Add pulse animation for high-risk results
-        if (data.fraudStatus === 'HIGH_RISK' || data.fraudStatus === 'BLOCKED') {
-            fraudStatusSpan.style.animation = 'pulse 2s infinite';
+        if (data.riskStatus === 'REVIEW' || data.riskStatus === 'BLOCK') {
+            riskStatusSpan.style.animation = 'pulse 2s infinite';
         } else {
-            fraudStatusSpan.style.animation = '';
+            riskStatusSpan.style.animation = '';
         }
         
         riskLevelSpan.textContent = data.riskLevel;
         invoiceIdSpan.textContent = data.invoiceId;
-        supplierNameSpan.textContent = data.supplierName;
-        supplierIbanSpan.textContent = data.supplierIban;
-        recommendationSpan.textContent = data.recommendation;
-        responseTimeSpan.textContent = data.responseTimeMs;
-        timestampSpan.textContent = new Date(data.timestamp).toLocaleString();
+        supplierNameSpan.textContent = data.supplierName || 'N/A';
+        supplierIbanSpan.textContent = data.supplierIban || 'N/A';
+        amountSpan.textContent = data.amount || 'N/A';
+        riskStatusTextSpan.textContent = data.riskStatus;
+        reasonSpan.textContent = data.reason || 'No specific reason provided';
+        transactionIdSpan.textContent = data.transactionId || 'N/A';
+        manualReviewSpan.textContent = data.requiresManualReview ? 'Yes' : 'No';
 
         // Display anomalies with better formatting
         anomaliesList.innerHTML = '';
