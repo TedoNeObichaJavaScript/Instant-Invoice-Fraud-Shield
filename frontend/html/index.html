@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instant Invoice: Fraud Shield</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <h1>🛡️ Instant Invoice: Fraud Shield</h1>
+                <p>FinLab Challenge - Real-time Payment Risk Assessment</p>
+            </div>
+            <div class="auth-section" id="authSection">
+                <div id="loginForm" class="auth-form">
+                    <h3>Login</h3>
+                    <form id="loginFormElement">
+                        <input type="text" id="username" placeholder="Username" required>
+                        <input type="password" id="password" placeholder="Password" required>
+                        <button type="submit">Login</button>
+                    </form>
+                </div>
+                <div id="userInfo" class="user-info" style="display: none;">
+                    <span id="welcomeMessage"></span>
+                    <button id="logoutBtn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard -->
+            <section id="dashboard" class="dashboard" style="display: none;">
+                <div class="dashboard-header">
+                    <h2>Risk Assessment Dashboard</h2>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <h3>Response Time</h3>
+                            <span id="avgResponseTime">--</span>
+                            <small>ms</small>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Assessments</h3>
+                            <span id="totalAssessments">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Success Rate</h3>
+                            <span id="successRate">--</span>
+                            <small>%</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Assessment Form -->
+                <div class="assessment-form">
+                    <h3>New Risk Assessment</h3>
+                    <form id="riskAssessmentForm">
+                        <div class="form-group">
+                            <label for="iban">IBAN</label>
+                            <input type="text" id="iban" placeholder="BG11BANK99991234567890" required>
+                            <small>Enter the IBAN to assess for risk</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="invoiceId">Invoice ID</label>
+                            <input type="text" id="invoiceId" placeholder="INV-2025-001" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="amount">Amount</label>
+                            <input type="number" id="amount" step="0.01" placeholder="1000.00" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="currency">Currency</label>
+                            <select id="currency" required>
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                                <option value="BGN">BGN</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="merchantId">Merchant ID</label>
+                            <input type="text" id="merchantId" placeholder="MERCHANT-001" required>
+                        </div>
+                        
+                        <button type="submit" id="assessBtn">Assess Risk</button>
+                    </form>
+                </div>
+
+                <!-- Results -->
+                <div id="results" class="results" style="display: none;">
+                    <h3>Assessment Results</h3>
+                    <div class="result-card">
+                        <div class="result-header">
+                            <span class="decision" id="decision"></span>
+                            <span class="risk-level" id="riskLevel"></span>
+                        </div>
+                        <div class="result-details">
+                            <p><strong>Invoice ID:</strong> <span id="resultInvoiceId"></span></p>
+                            <p><strong>Reason:</strong> <span id="reason"></span></p>
+                            <p><strong>Response Time:</strong> <span id="responseTime"></span>ms</p>
+                            <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Assessments -->
+                <div class="recent-assessments">
+                    <h3>Recent Assessments</h3>
+                    <div id="recentList" class="assessment-list">
+                        <!-- Dynamic content will be added here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Login Required Message -->
+            <section id="loginRequired" class="login-required">
+                <div class="message">
+                    <h2>🔐 Authentication Required</h2>
+                    <p>Please login to access the risk assessment dashboard.</p>
+                    <p><strong>Demo Credentials:</strong></p>
+                    <p>Username: <code>admin</code></p>
+                    <p>Password: <code>admin123</code></p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2025 Instant Invoice: Fraud Shield - FinLab Challenge</p>
+            <p>Built with Spring Boot, PostgreSQL, Redis, and Docker</p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Processing risk assessment...</p>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <div id="messageContainer" class="message-container"></div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
