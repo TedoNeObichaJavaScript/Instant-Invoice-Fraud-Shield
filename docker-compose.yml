@@ -41,7 +41,8 @@ services:
       dockerfile: Dockerfile
       target: production
     container_name: microservices-api-gateway
-    # Remove port exposure - only accessible via Nginx
+    ports:
+      - "8080:8080"  # Temporarily expose for debugging
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - POSTGRES_HOST=postgres
@@ -52,7 +53,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - ACCOUNTS_SERVICE_URL=http://accounts-service:8081
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production-make-it-long-and-random-this-is-a-very-long-secret-key-for-jwt-signing-that-is-secure-enough-for-production-use-and-should-be-at-least-256-bits-long}
       - API_KEY=${API_KEY:-YWJjZGVmZ2hpams7bG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MA==}
     depends_on:
       postgres:

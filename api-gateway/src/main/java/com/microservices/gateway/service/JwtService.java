@@ -10,6 +10,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -115,6 +116,50 @@ public class JwtService {
         }
     }
 
+    public User findUserByUsername(String username) {
+        String sql = "SELECT id, username, email, password_hash, is_active, created_at, updated_at FROM users WHERE username = ? AND is_active = true";
+        
+        List<User> users = jdbcTemplate.query(sql, new Object[]{username}, userRowMapper());
+        
+        return users.isEmpty() ? null : users.get(0);
+    }
+
+    public String extractUsername(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getSubject();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        try {
+            String username = extractUsername(token);
+            return username != null && username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isTokenExpired(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getExpiration()
+                    .before(new Date());
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     public User authenticateUser(String username, String password) {
         String sql = "SELECT id, username, email, password_hash, is_active, created_at, updated_at FROM users WHERE username = ? AND is_active = true";
         
@@ -125,7 +170,10 @@ public class JwtService {
         }
         
         User user = users.get(0);
-        if (passwordEncoder.matches(password, user.getPasswordHash())) {
+        
+        boolean passwordMatches = passwordEncoder.matches(password, user.getPasswordHash());
+        
+        if (passwordMatches) {
             return user;
         }
         

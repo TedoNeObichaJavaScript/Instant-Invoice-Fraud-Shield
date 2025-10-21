@@ -37,10 +37,10 @@ public class AuthController {
                 Map<String, Object> response = new HashMap<>();
                 response.put("error", "Invalid credentials");
                 
-                // Log failed login attempt
-                auditService.logRequest(null, "/api/auth/login", "POST", 
-                    getClientIpAddress(request), request.getHeader("User-Agent"), 
-                    "***REDACTED***", 401, (int)(System.currentTimeMillis() - startTime));
+                // Log failed login attempt - temporarily disabled for debugging
+                // auditService.logRequest(null, "/api/auth/login", "POST", 
+                //     getClientIpAddress(request), request.getHeader("User-Agent"), 
+                //     "***REDACTED***", 401, (int)(System.currentTimeMillis() - startTime));
                 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
@@ -55,10 +55,10 @@ public class AuthController {
                 "email", user.getEmail()
             ));
             
-            // Log successful login
-            auditService.logRequest(user.getId(), "/api/auth/login", "POST", 
-                getClientIpAddress(request), request.getHeader("User-Agent"), 
-                "***REDACTED***", 200, (int)(System.currentTimeMillis() - startTime));
+            // Log successful login - temporarily disabled for debugging
+            // auditService.logRequest(user.getId(), "/api/auth/login", "POST", 
+            //     getClientIpAddress(request), request.getHeader("User-Agent"), 
+            //     "***REDACTED***", 200, (int)(System.currentTimeMillis() - startTime));
             
             return ResponseEntity.ok(response);
             
@@ -67,9 +67,9 @@ public class AuthController {
             response.put("error", "Login failed");
             response.put("message", e.getMessage());
             
-            auditService.logRequest(null, "/api/auth/login", "POST", 
-                getClientIpAddress(request), request.getHeader("User-Agent"), 
-                "***REDACTED***", 500, (int)(System.currentTimeMillis() - startTime));
+            // auditService.logRequest(null, "/api/auth/login", "POST", 
+            //     getClientIpAddress(request), request.getHeader("User-Agent"), 
+            //     "***REDACTED***", 500, (int)(System.currentTimeMillis() - startTime));
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
