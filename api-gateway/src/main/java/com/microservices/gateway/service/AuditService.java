@@ -25,7 +25,7 @@ public class AuditService {
         String sql = """
             INSERT INTO audit.audit_logs 
             (user_id, endpoint, method, ip_address, user_agent, request_body, response_status, response_time_ms, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?::inet, ?, ?, ?, ?, ?)
             """;
         
         jdbcTemplate.update(sql, userId, endpoint, method, ipAddress, userAgent, 
