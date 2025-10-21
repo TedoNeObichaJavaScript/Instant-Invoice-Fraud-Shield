@@ -132,9 +132,10 @@ test-results/
 jmeter-results/
 stress_tests/results/
 
-# SSL certificates (except development self-signed certs)
+# SSL certificates - NEVER commit these to Git
 *.pem
-!frontend/ssl/*.key
-!frontend/ssl/*.crt
+*.key
+*.crt
 *.p12
 *.pfx
+frontend/ssl/
