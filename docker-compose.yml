@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Database
   postgres:
@@ -43,18 +41,18 @@ services:
     container_name: microservices-api-gateway
     ports:
       - "8080:8080"  # Temporarily expose for debugging
-            environment:
-              - SPRING_PROFILES_ACTIVE=docker
-              - POSTGRES_HOST=postgres
-              - POSTGRES_PORT=5432
-              - POSTGRES_DB=${POSTGRES_DB:-microservices_db}
-              - POSTGRES_USER=${POSTGRES_USER:-postgres}
-              - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-CHANGE_THIS_SECURE_PASSWORD}
-              - REDIS_HOST=redis
-              - REDIS_PORT=6379
-              - ACCOUNTS_SERVICE_URL=http://accounts-service:8081
-              - JWT_SECRET=${JWT_SECRET:-CHANGE_THIS_TO_A_SECURE_JWT_SECRET_AT_LEAST_256_BITS}
-              - API_KEY=${API_KEY:-CHANGE_THIS_TO_A_SECURE_API_KEY}
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-microservices_db}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-CHANGE_THIS_SECURE_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ACCOUNTS_SERVICE_URL=http://accounts-service:8081
+      - JWT_SECRET=${JWT_SECRET:-CHANGE_THIS_TO_A_SECURE_JWT_SECRET_AT_LEAST_256_BITS}
+      - API_KEY=${API_KEY:-CHANGE_THIS_TO_A_SECURE_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
