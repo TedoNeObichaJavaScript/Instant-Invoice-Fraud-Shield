@@ -17,45 +17,30 @@ CREATE INDEX idx_iban_risk_lookup_bank_code ON risk.iban_risk_lookup(bank_code);
 CREATE INDEX idx_iban_risk_lookup_risk_level ON risk.iban_risk_lookup(risk_level);
 CREATE INDEX idx_iban_risk_lookup_country ON risk.iban_risk_lookup(country_code);
 
--- Function to generate valid Bulgarian IBAN
-CREATE OR REPLACE FUNCTION generate_bg_iban() RETURNS VARCHAR(34) AS $$
+-- Create sequence for predictable IBAN generation
+CREATE SEQUENCE iban_sequence START 1;
+
+-- Function to generate predictable Bulgarian IBAN (for testing)
+CREATE OR REPLACE FUNCTION generate_bg_iban() RETURNS VARCHAR(22) AS $$
 DECLARE
-    bank_codes VARCHAR[] := ARRAY['BANK', 'BNBG', 'CITI', 'UNCR', 'UBBS', 'EXPR', 'FIBK', 'INVE', 'KBCB', 'LBBG', 'POST', 'SGBG', 'TBIB', 'VKZB'];
-    bank_code VARCHAR(10);
-    account_num VARCHAR(20);
+    bank_codes VARCHAR[] := ARRAY['BANK', 'BNBG', 'CITI', 'UNCR', 'UBBS'];
+    bank_code VARCHAR(4);
+    account_num VARCHAR(8);
     check_digits VARCHAR(2);
-    iban VARCHAR(34);
-    remainder INTEGER;
-    mod_result INTEGER;
+    sequence_num INTEGER;
 BEGIN
-    -- Select random bank code
-    bank_code := bank_codes[1 + floor(random() * array_length(bank_codes, 1))];
+    -- Get the current sequence number from a simple counter
+    -- This will be called 1000 times during migration
+    sequence_num := nextval('iban_sequence');
     
-    -- Generate random 10-digit account number
-    account_num := lpad(floor(random() * 10000000000)::TEXT, 10, '0');
+    -- Select bank code based on sequence (cycles through banks)
+    bank_code := bank_codes[1 + (sequence_num % array_length(bank_codes, 1))];
     
-    -- Create IBAN without check digits
-    iban := 'BG00' || bank_code || account_num;
+    -- Generate account number based on sequence
+    account_num := lpad(sequence_num::TEXT, 8, '0');
     
-    -- Calculate check digits using MOD 97-10 algorithm
-    -- Move first 4 characters to end
-    iban := substr(iban, 5) || substr(iban, 1, 4);
-    
-    -- Replace letters with numbers (A=10, B=11, ..., Z=35)
-    iban := replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
-        replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
-        replace(replace(replace(replace(replace(replace(iban,
-        'A', '10'), 'B', '11'), 'C', '12'), 'D', '13'), 'E', '14'), 'F', '15'), 'G', '16'),
-        'H', '17'), 'I', '18'), 'J', '19'), 'K', '20'), 'L', '21'), 'M', '22'), 'N', '23'),
-        'O', '24'), 'P', '25'), 'Q', '26'), 'R', '27'), 'S', '28'), 'T', '29'), 'U', '30'),
-        'V', '31'), 'W', '32'), 'X', '33'), 'Y', '34'), 'Z', '35');
-    
-    -- Calculate MOD 97
-    remainder := mod(iban::BIGINT, 97);
-    mod_result := 98 - remainder;
-    
-    -- Format check digits
-    check_digits := lpad(mod_result::TEXT, 2, '0');
+    -- Generate check digits based on sequence
+    check_digits := lpad((sequence_num % 100)::TEXT, 2, '0');
     
     -- Return final IBAN
     RETURN 'BG' || check_digits || bank_code || account_num;
