@@ -13,7 +13,7 @@
         <header class="header">
             <div class="logo">
                 <h1>🛡️ Instant Invoice: Fraud Shield</h1>
-                <p>FinLab Challenge - Real-time Payment Risk Assessment</p>
+                <p>FinLab Challenge - Supplier Payment Fraud Detection</p>
             </div>
             <div class="auth-section" id="authSection">
                 <div id="loginForm" class="auth-form">
@@ -36,16 +36,20 @@
             <!-- Dashboard -->
             <section id="dashboard" class="dashboard" style="display: none;">
                 <div class="dashboard-header">
-                    <h2>Risk Assessment Dashboard</h2>
+                    <h2>Supplier Payment Fraud Detection</h2>
                     <div class="stats">
                         <div class="stat-card">
-                            <h3>Response Time</h3>
+                            <h3>Avg Response Time</h3>
                             <span id="avgResponseTime">--</span>
                             <small>ms</small>
                         </div>
                         <div class="stat-card">
-                            <h3>Total Assessments</h3>
-                            <span id="totalAssessments">0</span>
+                            <h3>Payments Checked</h3>
+                            <span id="totalPayments">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Fraud Detected</h3>
+                            <span id="fraudDetected">0</span>
                         </div>
                         <div class="stat-card">
                             <h3>Success Rate</h3>
@@ -55,14 +59,14 @@
                     </div>
                 </div>
 
-                <!-- Risk Assessment Form -->
-                <div class="assessment-form">
-                    <h3>New Risk Assessment</h3>
-                    <form id="riskAssessmentForm">
+                <!-- Supplier Payment Validation Form -->
+                <div class="validation-form">
+                    <h3>Validate Supplier Payment</h3>
+                    <form id="paymentValidationForm">
                         <div class="form-group">
-                            <label for="iban">IBAN</label>
-                            <input type="text" id="iban" placeholder="BG11BANK99991234567890" required>
-                            <small>Enter the IBAN to assess for risk</small>
+                            <label for="supplierIban">Supplier IBAN</label>
+                            <input type="text" id="supplierIban" placeholder="BG11BANK99991234567890" required>
+                            <small>Enter the supplier's IBAN to check against risky database</small>
                         </div>
                         
                         <div class="form-group">
@@ -71,8 +75,13 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="amount">Amount</label>
-                            <input type="number" id="amount" step="0.01" placeholder="1000.00" required>
+                            <label for="supplierName">Supplier Name</label>
+                            <input type="text" id="supplierName" placeholder="ABC Supplies Ltd." required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="paymentAmount">Payment Amount</label>
+                            <input type="number" id="paymentAmount" step="0.01" placeholder="1000.00" required>
                         </div>
                         
                         <div class="form-group">
@@ -85,35 +94,46 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="merchantId">Merchant ID</label>
-                            <input type="text" id="merchantId" placeholder="MERCHANT-001" required>
+                            <label for="invoiceNumber">Invoice Number</label>
+                            <input type="text" id="invoiceNumber" placeholder="INV-2025-001" required>
                         </div>
                         
-                        <button type="submit" id="assessBtn">Assess Risk</button>
+                        <div class="form-group">
+                            <label for="supplierReference">Supplier Reference</label>
+                            <input type="text" id="supplierReference" placeholder="SUP-001" required>
+                        </div>
+                        
+                        <button type="submit" id="validateBtn">Validate Payment</button>
                     </form>
                 </div>
 
-                <!-- Results -->
+                <!-- Fraud Detection Results -->
                 <div id="results" class="results" style="display: none;">
-                    <h3>Assessment Results</h3>
+                    <h3>Fraud Detection Results</h3>
                     <div class="result-card">
                         <div class="result-header">
-                            <span class="decision" id="decision"></span>
+                            <span class="fraud-status" id="fraudStatus"></span>
                             <span class="risk-level" id="riskLevel"></span>
                         </div>
                         <div class="result-details">
                             <p><strong>Invoice ID:</strong> <span id="resultInvoiceId"></span></p>
-                            <p><strong>Reason:</strong> <span id="reason"></span></p>
+                            <p><strong>Supplier:</strong> <span id="resultSupplierName"></span></p>
+                            <p><strong>IBAN:</strong> <span id="resultSupplierIban"></span></p>
+                            <p><strong>Recommendation:</strong> <span id="recommendation"></span></p>
                             <p><strong>Response Time:</strong> <span id="responseTime"></span>ms</p>
                             <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+                        </div>
+                        <div class="anomalies-section">
+                            <h4>Detected Anomalies:</h4>
+                            <ul id="anomaliesList"></ul>
                         </div>
                     </div>
                 </div>
 
-                <!-- Recent Assessments -->
-                <div class="recent-assessments">
-                    <h3>Recent Assessments</h3>
-                    <div id="recentList" class="assessment-list">
+                <!-- Recent Validations -->
+                <div class="recent-validations">
+                    <h3>Recent Payment Validations</h3>
+                    <div id="recentList" class="validation-list">
                         <!-- Dynamic content will be added here -->
                     </div>
                 </div>
@@ -123,7 +143,7 @@
             <section id="loginRequired" class="login-required">
                 <div class="message">
                     <h2>🔐 Authentication Required</h2>
-                    <p>Please login to access the risk assessment dashboard.</p>
+                    <p>Please login to access the supplier payment fraud detection system.</p>
                     <p><strong>Demo Credentials:</strong></p>
                     <p>Username: <code>admin</code></p>
                     <p>Password: <code>admin123</code></p>
@@ -134,14 +154,14 @@
         <!-- Footer -->
         <footer class="footer">
             <p>&copy; 2025 Instant Invoice: Fraud Shield - FinLab Challenge</p>
-            <p>Built with Spring Boot, PostgreSQL, Redis, and Docker</p>
+            <p>Preventing invoice fraud through supplier payment validation</p>
         </footer>
     </div>
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay" style="display: none;">
         <div class="loading-spinner"></div>
-        <p>Processing risk assessment...</p>
+        <p>Analyzing supplier payment for fraud...</p>
     </div>
 
     <!-- Error/Success Messages -->
