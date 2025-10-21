@@ -33,8 +33,7 @@ public class JwtService {
     public JwtService(JdbcTemplate jdbcTemplate, 
                       RedisTemplate<String, Object> redisTemplate,
                       @Value("${jwt.secret}") String secret,
-                      @Value("${jwt.expiration}") long jwtExpiration,
-) {
+                      @Value("${jwt.expiration}") long jwtExpiration) {
         this.jdbcTemplate = jdbcTemplate;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = new BCryptPasswordEncoder();
