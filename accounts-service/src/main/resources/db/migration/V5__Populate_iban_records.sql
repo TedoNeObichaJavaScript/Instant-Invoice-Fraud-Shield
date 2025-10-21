@@ -38,8 +38,4 @@ BEGIN
     RAISE NOTICE 'IBAN population completed! Total records: %', records_inserted;
 END $$;
 
--- Create additional indexes after population for better performance
-CREATE INDEX CONCURRENTLY idx_iban_risk_lookup_composite ON risk.iban_risk_lookup(risk_level, country_code);
-
--- Update table statistics
-ANALYZE risk.iban_risk_lookup;
+-- Note: Performance indexes are created in V7__Create_performance_indexes.sql
