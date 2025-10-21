@@ -99,11 +99,6 @@ public class JwtService {
                 .getBody();
     }
 
-    public UUID getUserIdFromToken(String token) {
-        Claims claims = getClaimsFromToken(token);
-        return UUID.fromString(claims.getSubject());
-    }
-
     public void revokeToken(String token) {
         try {
             Claims claims = getClaimsFromToken(token);
@@ -132,7 +127,16 @@ public class JwtService {
     public String extractUsername(String token) {
         try {
             Claims claims = getClaimsFromToken(token);
-            return claims.getSubject();
+            return claims.get("username", String.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public UUID getUserIdFromToken(String token) {
+        try {
+            Claims claims = getClaimsFromToken(token);
+            return UUID.fromString(claims.getSubject());
         } catch (Exception e) {
             return null;
         }
