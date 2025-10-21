@@ -2,13 +2,15 @@ package com.microservices.accounts.model;
 
 import java.time.LocalDateTime;
 
-public class RiskAssessmentRequest {
-    private String iban;
+public class SupplierPaymentRequest {
+    private String supplierIban;
     private String invoiceId;
-    private Double amount;
+    private String supplierName;
+    private Double paymentAmount;
     private String currency;
-    private String merchantId;
-    private LocalDateTime timestamp;
+    private String invoiceNumber;
+    private String supplierReference;
+    private LocalDateTime paymentDate;
 
     // Constructors
     public RiskAssessmentRequest() {}
