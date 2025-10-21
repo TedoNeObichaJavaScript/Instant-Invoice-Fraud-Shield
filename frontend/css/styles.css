@@ -170,15 +170,15 @@ body {
     opacity: 0.8;
 }
 
-/* Assessment Form */
-.assessment-form {
+/* Validation Form */
+.validation-form {
     background: #f8f9fa;
     padding: 2rem;
     border-radius: 10px;
     margin-bottom: 2rem;
 }
 
-.assessment-form h3 {
+.validation-form h3 {
     color: #2c3e50;
     margin-bottom: 1.5rem;
 }
@@ -217,7 +217,7 @@ body {
     display: block;
 }
 
-#assessBtn {
+#validateBtn {
     width: 100%;
     padding: 1rem;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -230,12 +230,12 @@ body {
     transition: transform 0.3s, box-shadow 0.3s;
 }
 
-#assessBtn:hover {
+#validateBtn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
-#assessBtn:disabled {
+#validateBtn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
@@ -268,7 +268,7 @@ body {
     margin-bottom: 1rem;
 }
 
-.decision {
+.fraud-status {
     font-size: 1.5rem;
     font-weight: bold;
     padding: 0.5rem 1rem;
@@ -276,15 +276,19 @@ body {
     color: white;
 }
 
-.decision.ALLOW {
+.fraud-status.SAFE {
     background: #27ae60;
 }
 
-.decision.REVIEW {
+.fraud-status.SUSPICIOUS {
     background: #f39c12;
 }
 
-.decision.BLOCK {
+.fraud-status.HIGH_RISK {
+    background: #e67e22;
+}
+
+.fraud-status.BLOCKED {
     background: #e74c3c;
 }
 
@@ -302,18 +306,49 @@ body {
     color: #2c3e50;
 }
 
-/* Recent Assessments */
-.recent-assessments h3 {
+.anomalies-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+.anomalies-section h4 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.anomalies-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.anomalies-section li {
+    background: #f8f9fa;
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    color: #2c3e50;
+}
+
+.anomalies-section li.no-anomalies {
+    color: #27ae60;
+    font-style: italic;
+}
+
+/* Recent Validations */
+.recent-validations h3 {
     color: #2c3e50;
     margin-bottom: 1rem;
 }
 
-.assessment-list {
+.validation-list {
     display: grid;
     gap: 1rem;
 }
 
-.assessment-item {
+.validation-item {
     background: white;
     padding: 1rem;
     border-radius: 8px;
@@ -321,26 +356,30 @@ body {
     border-left: 4px solid #3498db;
 }
 
-.assessment-item.BLOCK {
+.validation-item.BLOCKED {
     border-left-color: #e74c3c;
 }
 
-.assessment-item.REVIEW {
+.validation-item.HIGH_RISK {
+    border-left-color: #e67e22;
+}
+
+.validation-item.SUSPICIOUS {
     border-left-color: #f39c12;
 }
 
-.assessment-item.ALLOW {
+.validation-item.SAFE {
     border-left-color: #27ae60;
 }
 
-.assessment-item-header {
+.validation-item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.5rem;
 }
 
-.assessment-item-decision {
+.validation-item-status {
     font-weight: bold;
     padding: 0.25rem 0.5rem;
     border-radius: 3px;
@@ -348,12 +387,12 @@ body {
     font-size: 0.8rem;
 }
 
-.assessment-item-time {
+.validation-item-time {
     color: #7f8c8d;
     font-size: 0.8rem;
 }
 
-.assessment-item-details {
+.validation-item-details {
     color: #2c3e50;
     font-size: 0.9rem;
 }
@@ -483,7 +522,7 @@ body {
         padding: 1rem;
     }
     
-    .assessment-form,
+    .validation-form,
     .results {
         padding: 1rem;
     }
