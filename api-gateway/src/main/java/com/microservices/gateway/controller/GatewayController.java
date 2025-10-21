@@ -79,7 +79,7 @@ public class GatewayController {
 
             // Forward request to accounts service
             String path = extractPathFromRequest(request);
-            String forwardedResponse = apiGatewayService.forwardToAccountsService(path, method, requestBody).block();
+            String forwardedResponse = apiGatewayService.forwardToAccountsService(path, method, requestBody);
             
             responseStatus = 200;
             responseBody = forwardedResponse;
