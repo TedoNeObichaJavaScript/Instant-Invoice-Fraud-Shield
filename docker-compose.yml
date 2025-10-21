@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15
+    container_name: microservices-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-microservices_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+    # Remove port exposure for security - only internal access
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: microservices-redis
+    # Remove port exposure for security - only internal access
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+      target: production
+    container_name: microservices-api-gateway
+    # Remove port exposure - only accessible via Nginx
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-microservices_db}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres123}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ACCOUNTS_SERVICE_URL=http://accounts-service:8081
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - API_KEY=${API_KEY:-YWJjZGVmZ2hpams7bG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MA==}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  # Accounts Microservice
+  accounts-service:
+    build:
+      context: ./accounts-service
+      dockerfile: Dockerfile
+      target: production
+    container_name: microservices-accounts
+    # Remove port exposure - only accessible via API Gateway
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-microservices_db}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres123}
+      - API_KEY=${API_KEY:-YWJjZGVmZ2hpams7bG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MA==}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  # Frontend + Nginx Reverse Proxy
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: microservices-frontend
+    ports:
+      - "443:443"  # HTTPS only
+      - "80:80"    # HTTP redirect to HTTPS
+    depends_on:
+      - api-gateway
+    networks:
+      - microservices-network
+
+  # JMeter for Stress Testing
+  jmeter:
+    image: justb4/jmeter:5.5
+    container_name: microservices-jmeter
+    volumes:
+      - ./stress_tests:/tests
+      - ./stress_tests/results:/results
+    networks:
+      - microservices-network
+    command: ["-n", "-t", "/tests/load_test.jmx", "-l", "/results/results.jtl", "-e", "-o", "/results/html-report"]
+    depends_on:
+      - api-gateway
+      - accounts-service
+    profiles:
+      - testing  # Only run when explicitly requested
+
+volumes:
+  postgres_data:
+
+networks:
+  microservices-network:
+    driver: bridge
+
