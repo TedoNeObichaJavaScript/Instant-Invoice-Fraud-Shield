@@ -35,17 +35,56 @@ public class FraudDetectionService {
         String transactionId = UUID.randomUUID().toString();
         List<String> anomalies = new ArrayList<>();
         String riskStatus = "ALLOW";
-        String riskLevel = "LOW";
+        String riskLevel = "GOOD";
         String reason = "No anomalies detected";
         boolean requiresManualReview = false;
 
         try {
-            // 1. Check if IBAN is in risky IBANs database
-            if (isIbanRisky(request.getSupplierIban())) {
-                anomalies.add("IBAN found in risky IBANs database");
-                riskStatus = "BLOCK";
-                riskLevel = "CRITICAL";
-                reason = "IBAN is flagged as high-risk";
+            // 1. Check IBAN in database first
+            System.out.println("DEBUG: Analyzing payment for IBAN: " + request.getSupplierIban());
+            String dbRiskLevel = getIbanRiskLevel(request.getSupplierIban());
+            System.out.println("DEBUG: Database returned risk level: " + dbRiskLevel);
+            
+            if (dbRiskLevel != null) {
+                switch (dbRiskLevel) {
+                    case "BLOCK":
+                        riskStatus = "BLOCK";
+                        riskLevel = "BLOCK";
+                        reason = "IBAN is flagged as blocked in database";
+                        anomalies.add("IBAN found in blocked IBANs database");
+                        requiresManualReview = true;
+                        System.out.println("DEBUG: Setting BLOCK status");
+                        break;
+                    case "REVIEW":
+                        riskStatus = "REVIEW";
+                        riskLevel = "REVIEW";
+                        reason = "IBAN requires manual review";
+                        anomalies.add("IBAN flagged for review in database");
+                        requiresManualReview = true;
+                        System.out.println("DEBUG: Setting REVIEW status");
+                        break;
+                    case "GOOD":
+                        riskStatus = "ALLOW";
+                        riskLevel = "GOOD";
+                        reason = "IBAN verified as good in database";
+                        System.out.println("DEBUG: Setting ALLOW status");
+                        break;
+                    default:
+                        // Unknown risk level, treat as review
+                        riskStatus = "REVIEW";
+                        riskLevel = "REVIEW";
+                        reason = "IBAN has unknown risk level in database";
+                        anomalies.add("IBAN has unknown risk classification");
+                        requiresManualReview = true;
+                        System.out.println("DEBUG: Setting REVIEW status for unknown risk level: " + dbRiskLevel);
+                        break;
+                }
+            } else {
+                // IBAN not found in database - treat as review
+                riskStatus = "REVIEW";
+                riskLevel = "REVIEW";
+                reason = "IBAN not found in risk database - manual review required";
+                anomalies.add("IBAN not found in risk database");
                 requiresManualReview = true;
             }
 
@@ -53,47 +92,45 @@ public class FraudDetectionService {
             if (!isValidIban(request.getSupplierIban())) {
                 anomalies.add("Invalid IBAN format or checksum");
                 riskStatus = "BLOCK";
-                riskLevel = "CRITICAL";
+                riskLevel = "BLOCK";
                 reason = "Invalid IBAN format";
+                requiresManualReview = true;
             }
 
-            // 3. Check for suspicious patterns
-            if (hasSuspiciousPatterns(request)) {
-                anomalies.add("Suspicious payment pattern detected");
-                if (!"BLOCK".equals(riskStatus)) {
-                    riskStatus = "REVIEW";
-                    riskLevel = "HIGH";
-                    reason = "Suspicious payment pattern requires review";
-                    requiresManualReview = true;
+            // 3. Additional checks only if not already blocked and not explicitly marked as GOOD by database
+            if (!"BLOCK".equals(riskStatus) && !"GOOD".equals(riskLevel)) {
+                // Check for suspicious patterns
+                if (hasSuspiciousPatterns(request)) {
+                    anomalies.add("Suspicious payment pattern detected");
+                    if ("ALLOW".equals(riskStatus)) {
+                        riskStatus = "REVIEW";
+                        riskLevel = "REVIEW";
+                        reason = "Suspicious payment pattern requires review";
+                        requiresManualReview = true;
+                    }
                 }
-            }
 
-            // 4. Check amount thresholds
-            if (isAmountSuspicious(request.getAmount())) {
-                anomalies.add("Suspicious amount detected");
-                if (!"BLOCK".equals(riskStatus)) {
-                    riskStatus = "REVIEW";
-                    riskLevel = "MEDIUM";
-                    reason = "Amount exceeds normal thresholds";
-                    requiresManualReview = true;
+                // Check amount thresholds
+                if (isAmountSuspicious(request.getAmount())) {
+                    anomalies.add("Suspicious amount detected");
+                    if ("ALLOW".equals(riskStatus)) {
+                        riskStatus = "REVIEW";
+                        riskLevel = "REVIEW";
+                        reason = "Amount exceeds normal thresholds";
+                        requiresManualReview = true;
+                    }
                 }
-            }
 
-            // 5. Check supplier consistency
-            if (hasSupplierInconsistency(request)) {
-                anomalies.add("Supplier information inconsistency");
-                if (!"BLOCK".equals(riskStatus)) {
-                    riskStatus = "REVIEW";
-                    riskLevel = "MEDIUM";
-                    reason = "Supplier information requires verification";
-                    requiresManualReview = true;
+                // Check supplier consistency
+                if (hasSupplierInconsistency(request)) {
+                    anomalies.add("Supplier information inconsistency");
+                    if ("ALLOW".equals(riskStatus)) {
+                        riskStatus = "REVIEW";
+                        riskLevel = "REVIEW";
+                        reason = "Supplier information requires verification";
+                        requiresManualReview = true;
+                    }
                 }
-            }
-
-            // 6. If no specific issues, check for general risk factors
-            if (anomalies.isEmpty()) {
-                riskLevel = "LOW";
-                reason = "Payment appears legitimate";
             }
 
             // 7. Log the analysis result
@@ -101,7 +138,7 @@ public class FraudDetectionService {
 
         } catch (Exception e) {
             riskStatus = "REVIEW";
-            riskLevel = "HIGH";
+            riskLevel = "REVIEW";
             reason = "Error during analysis - manual review required";
             requiresManualReview = true;
             anomalies.add("Analysis error: " + e.getMessage());
@@ -120,11 +157,27 @@ public class FraudDetectionService {
     }
 
     /**
+     * Get the risk level of an IBAN from the database
+     */
+    private String getIbanRiskLevel(String iban) {
+        try {
+            String sql = "SELECT risk_level FROM risk.iban_risk_lookup WHERE iban = ?";
+            String result = jdbcTemplate.queryForObject(sql, String.class, iban);
+            System.out.println("DEBUG: Found IBAN " + iban + " with risk level: " + result);
+            return result;
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error querying IBAN " + iban + ": " + e.getMessage());
+            // If database error or IBAN not found, return null
+            return null;
+        }
+    }
+
+    /**
      * Check if IBAN is in the risky IBANs database
      */
     private boolean isIbanRisky(String iban) {
         try {
-            String sql = "SELECT COUNT(*) FROM iban_risk_lookup WHERE iban = ? AND risk_level IN ('HIGH', 'CRITICAL')";
+            String sql = "SELECT COUNT(*) FROM iban_risk_lookup WHERE iban = ? AND risk_level = 'BLOCK'";
             Integer count = jdbcTemplate.queryForObject(sql, Integer.class, iban);
             return count != null && count > 0;
         } catch (Exception e) {
@@ -134,7 +187,7 @@ public class FraudDetectionService {
     }
 
     /**
-     * Validate IBAN format and checksum using Modulo 97-10 algorithm
+     * Validate IBAN format and checksum using Modulo 97-10 algorithm (ISO 13616)
      */
     private boolean isValidIban(String iban) {
         if (iban == null || iban.length() < 15 || iban.length() > 34) {
@@ -162,11 +215,13 @@ public class FraudDetectionService {
                 if (Character.isDigit(c)) {
                     numericString.append(c);
                 } else {
-                    numericString.append(Character.getNumericValue(c) - 10 + 10);
+                    // Fix: A=10, B=11, ..., Z=35
+                    int value = c - 'A' + 10;
+                    numericString.append(value);
                 }
             }
             
-            // Calculate mod 97
+            // Calculate mod 97 using big integer approach for large numbers
             String number = numericString.toString();
             int remainder = 0;
             for (int i = 0; i < number.length(); i++) {

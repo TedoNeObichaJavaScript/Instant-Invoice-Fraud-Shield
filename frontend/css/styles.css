@@ -686,6 +686,23 @@ body:not(:has(.dashboard)) .main-content {
     color: white;
 }
 
+.fraud-status.allow {
+    background: var(--success-500);
+}
+
+.fraud-status.review {
+    background: var(--warning-500);
+}
+
+.fraud-status.block {
+    background: var(--danger-500);
+}
+
+.fraud-status.unknown {
+    background: var(--gray-500);
+}
+
+/* Legacy support */
 .fraud-status.SAFE {
     background: var(--success-500);
 }
@@ -1293,6 +1310,18 @@ body:not(:has(.dashboard)) .footer {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
+    gap: 0.5rem;
+}
+
+.validation-type {
+    background: #e2e8f0;
+    color: #475569;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
 }
 
 .invoice-id {
@@ -1328,6 +1357,153 @@ body:not(:has(.dashboard)) .footer {
 .risk-status.unknown {
     background: #f3f4f6;
     color: #6b7280;
+}
+
+/* IBAN Status Section */
+.iban-status-section {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.iban-status-section h5 {
+    margin: 0 0 0.75rem 0;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.iban-status-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.iban-status-display:last-child {
+    margin-bottom: 0;
+}
+
+.risk-unknown {
+    color: var(--gray-500);
+    font-weight: 500;
+}
+
+.risk-good {
+    color: var(--success-600);
+    font-weight: 600;
+}
+
+.risk-review {
+    color: var(--warning-600);
+    font-weight: 600;
+}
+
+.risk-block {
+    color: var(--danger-600);
+    font-weight: 600;
+}
+
+.status-unknown {
+    color: var(--gray-500);
+    font-style: italic;
+}
+
+.status-allow {
+    color: var(--success-600);
+    font-weight: 600;
+}
+
+.status-review {
+    color: var(--warning-600);
+    font-weight: 600;
+}
+
+.status-block {
+    color: var(--danger-600);
+    font-weight: 600;
+}
+
+/* Blocked Payments Section */
+.blocked-payments {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid var(--danger-500);
+}
+
+.blocked-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.blocked-icon {
+    color: var(--danger-500);
+}
+
+.blocked-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.blocked-item {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    border-left: 4px solid var(--danger-500);
+}
+
+.blocked-header-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.blocked-status {
+    background: var(--danger-500);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.blocked-details {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--gray-600);
+}
+
+.blocked-reason {
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+}
+
+.blocked-timestamp {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+}
+
+.no-blocked {
+    text-align: center;
+    color: var(--gray-500);
+    font-style: italic;
+    padding: 2rem;
 }
 
 .validation-details {
