@@ -1,6 +1,5 @@
 package com.microservices.gateway.service;
 
-import com.microservices.gateway.model.JwtToken;
 import com.microservices.gateway.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -30,19 +29,17 @@ public class JwtService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final SecretKey secretKey;
     private final long jwtExpiration;
-    private final long refreshExpiration;
 
     public JwtService(JdbcTemplate jdbcTemplate, 
                       RedisTemplate<String, Object> redisTemplate,
                       @Value("${jwt.secret}") String secret,
                       @Value("${jwt.expiration}") long jwtExpiration,
-                      @Value("${jwt.refresh-expiration}") long refreshExpiration) {
+) {
         this.jdbcTemplate = jdbcTemplate;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.jwtExpiration = jwtExpiration;
-        this.refreshExpiration = refreshExpiration;
     }
 
     public String generateToken(User user) {
@@ -105,8 +102,6 @@ public class JwtService {
     public void revokeToken(String token) {
         try {
             Claims claims = getClaimsFromToken(token);
-            UUID userId = UUID.fromString(claims.getSubject());
-            
             // Revoke in database
             jdbcTemplate.update(
                 "UPDATE jwt_tokens SET is_revoked = true, revoked_at = ? WHERE token_hash = ?",
