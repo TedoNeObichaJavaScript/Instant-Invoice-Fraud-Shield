@@ -26,7 +26,7 @@ server:
   port: 8080
 
 jwt:
-  secret: ${JWT_SECRET:your-super-secret-jwt-key-change-in-production-make-it-long-and-random-this-is-a-very-long-secret-key-for-jwt-signing-that-is-secure-enough-for-production-use-and-should-be-at-least-256-bits-long}
+  secret: ${JWT_SECRET:YWJjZGVmZ2hpams7bG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MGFiY2RlZmdoaWprO2xtbm9wcXJzdHV2eHl6MTIzNDU2Nzg5MA==}
   expiration: 86400000
   refresh-expiration: 604800000
 

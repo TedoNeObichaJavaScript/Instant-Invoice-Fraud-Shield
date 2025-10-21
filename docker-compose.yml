@@ -51,7 +51,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - ACCOUNTS_SERVICE_URL=http://accounts-service:8081
-      - JWT_SECRET=${JWT_SECRET:-CHANGE_THIS_TO_A_SECURE_JWT_SECRET_AT_LEAST_256_BITS}
+      - JWT_SECRET=${JWT_SECRET:-YWJjZGVmZ2hpams7bG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MGFiY2RlZmdoaWprO2xtbm9wcXJzdHV2eHl6MTIzNDU2Nzg5MA==}
       - API_KEY=${API_KEY:-CHANGE_THIS_TO_A_SECURE_API_KEY}
     depends_on:
       postgres:

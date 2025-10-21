@@ -17,16 +17,55 @@
             </div>
             <div class="auth-section" id="authSection">
                 <div id="loginForm" class="auth-form">
-                    <h3>Sign In</h3>
-                    <form id="loginFormElement">
-                        <input type="text" id="username" placeholder="Username" required>
-                        <input type="password" id="password" placeholder="Password" required>
-                        <button type="submit">Sign In</button>
-                    </form>
+                    <div class="auth-card">
+                        <div class="auth-header">
+                            <div class="auth-icon">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                </svg>
+                            </div>
+                            <h3>Welcome Back</h3>
+                            <p>Sign in to access the fraud detection system</p>
+                        </div>
+                        <form id="loginFormElement" class="auth-form-content">
+                            <div class="input-group">
+                                <label for="username">Username</label>
+                                <input type="text" id="username" placeholder="Enter your username" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="password">Password</label>
+                                <input type="password" id="password" placeholder="Enter your password" required>
+                            </div>
+                            <button type="submit" class="auth-submit-btn">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                                </svg>
+                                Sign In
+                            </button>
+                        </form>
+                        <div class="auth-footer">
+                            <p>Demo credentials: Use any username/password</p>
+                        </div>
+                    </div>
                 </div>
                 <div id="userInfo" class="user-info" style="display: none;">
-                    <span id="welcomeMessage"></span>
-                    <button id="logoutBtn">Logout</button>
+                    <div class="user-card">
+                        <div class="user-avatar">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        <div class="user-details">
+                            <span id="welcomeMessage" class="user-name"></span>
+                            <span class="user-role">System Administrator</span>
+                        </div>
+                        <button id="logoutBtn" class="logout-btn">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -92,7 +131,7 @@
                     </div>
                 </div>
 
-                <!-- Supplier Payment Validation Form -->
+                <!-- Payment Generation and Validation Form -->
                 <div class="validation-form">
                     <div class="form-header">
                         <div class="form-icon">
@@ -100,61 +139,73 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <h3>Fraud Detection API</h3>
-                        <p class="form-subtitle">Validate payment transactions before processing</p>
+                        <h3>Payment Fraud Detection System</h3>
+                        <p class="form-subtitle">Generate and validate payment transactions against risky IBAN database</p>
                     </div>
-                    <form id="fraudDetectionForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="invoiceId">Invoice ID *</label>
-                                <input type="text" id="invoiceId" placeholder="INV-2025-001" required>
-                                <small>Unique identifier for this invoice</small>
-                            </div>
-                            <div class="form-group">
-                                <label for="amount">Amount (BGN) *</label>
-                                <input type="number" id="amount" placeholder="1000.00" step="0.01" min="0.01" required>
-                                <small>Payment amount to validate</small>
+                    
+                    <!-- Generated Payment Display -->
+                    <div id="generatedPayment" class="generated-payment" style="display: none;">
+                        <div class="payment-card">
+                            <h4>Generated Payment</h4>
+                            <div class="payment-details">
+                                <div class="payment-row">
+                                    <span class="label">Invoice ID:</span>
+                                    <span id="genInvoiceId" class="value">--</span>
+                                </div>
+                                <div class="payment-row">
+                                    <span class="label">Amount:</span>
+                                    <span id="genAmount" class="value">--</span>
+                                </div>
+                                <div class="payment-row">
+                                    <span class="label">Supplier IBAN:</span>
+                                    <span id="genSupplierIban" class="value">--</span>
+                                </div>
+                                <div class="payment-row">
+                                    <span class="label">Supplier Name:</span>
+                                    <span id="genSupplierName" class="value">--</span>
+                                </div>
+                                <div class="payment-row">
+                                    <span class="label">Country:</span>
+                                    <span id="genSupplierCountry" class="value">--</span>
+                                </div>
+                                <div class="payment-row">
+                                    <span class="label">Purpose:</span>
+                                    <span id="genPaymentPurpose" class="value">--</span>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="button-container">
+                        <button type="button" id="generatePaymentBtn" class="btn-primary">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Generate Payment
+                        </button>
                         
-                        <div class="form-row">
-                            <div class="form-group full-width">
-                                <label for="supplierIban">Supplier IBAN *</label>
-                                <input type="text" id="supplierIban" placeholder="BG11BANK99991234567890" required>
-                                <small>IBAN to check against risk database and validate format</small>
-                            </div>
-                        </div>
+                        <button type="button" id="validatePaymentBtn" class="btn-secondary" disabled>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Validate Payment
+                        </button>
                         
-                        <div class="form-row">
-                            <div class="form-group full-width">
-                                <label for="supplierName">Supplier Name *</label>
-                                <input type="text" id="supplierName" placeholder="ACME Corporation Ltd" required>
-                                <small>Official supplier company name</small>
-                            </div>
-                        </div>
+                        <button type="button" id="fraudCheckBtn" class="btn-warning" disabled>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Fraud Check
+                        </button>
                         
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="supplierCountry">Supplier Country</label>
-                                <input type="text" id="supplierCountry" placeholder="Bulgaria">
-                                <small>Optional: Supplier country</small>
-                            </div>
-                            <div class="form-group">
-                                <label for="paymentPurpose">Payment Purpose</label>
-                                <input type="text" id="paymentPurpose" placeholder="Invoice payment">
-                                <small>Optional: Payment description</small>
-                            </div>
-                        </div>
-                        
-                        <div class="button-container">
-                            <button type="submit" id="validateBtn">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Analyze for Fraud
-                            </button>
-                        </div>
-                    </form>
+                        <button type="button" id="unvalidatePaymentBtn" class="btn-danger" disabled>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Unvalidate Payment
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Fraud Detection Results -->
@@ -205,7 +256,7 @@
                         </div>
                         <h3>Recent Payment Validations</h3>
                     </div>
-                    <div id="recentList" class="validation-list">
+                    <div id="recentValidations" class="validation-list">
                         <!-- Dynamic content will be added here -->
                     </div>
                 </div>

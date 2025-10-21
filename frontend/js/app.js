@@ -1,8 +1,10 @@
-// Instant Invoice: Fraud Shield - Advanced Payment Fraud Detection
-class SupplierFraudDetectionApp {
+// Instant Invoice: Fraud Shield - Payment Generation and Validation System
+class PaymentFraudDetectionApp {
     constructor() {
         this.apiBaseUrl = '/api';
         this.authToken = null;
+        this.currentUser = null;
+        this.currentPayment = null;
         this.validations = [];
         this.stats = {
             totalPayments: 0,
@@ -21,17 +23,10 @@ class SupplierFraudDetectionApp {
     }
 
     setupEventListeners() {
-        // Login form with enhanced validation
+        // Login form
         const loginForm = document.getElementById('loginFormElement');
         if (loginForm) {
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
-            
-            // Real-time validation
-            const inputs = loginForm.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.addEventListener('blur', () => this.validateInput(input));
-                input.addEventListener('input', () => this.clearInputError(input));
-            });
         }
 
         // Logout button
@@ -40,176 +35,33 @@ class SupplierFraudDetectionApp {
             logoutBtn.addEventListener('click', () => this.handleLogout());
         }
 
-        // Fraud detection form with enhanced UX
-        const fraudDetectionForm = document.getElementById('fraudDetectionForm');
-        if (fraudDetectionForm) {
-            fraudDetectionForm.addEventListener('submit', (e) => this.handleFraudDetection(e));
-            
-            // Real-time IBAN validation
-            const ibanInput = document.getElementById('supplierIban');
-            if (ibanInput) {
-                ibanInput.addEventListener('input', () => this.validateIBAN(ibanInput));
-            }
-            
-            // Form field validation
-            const inputs = validationForm.querySelectorAll('input, select');
-            inputs.forEach(input => {
-                input.addEventListener('blur', () => this.validateFormField(input));
-                input.addEventListener('input', () => this.clearFieldError(input));
-            });
+        // Payment generation and validation buttons
+        const generateBtn = document.getElementById('generatePaymentBtn');
+        const validateBtn = document.getElementById('validatePaymentBtn');
+        const fraudCheckBtn = document.getElementById('fraudCheckBtn');
+        const unvalidateBtn = document.getElementById('unvalidatePaymentBtn');
+
+        if (generateBtn) {
+            generateBtn.addEventListener('click', () => this.generatePayment());
         }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
-    }
-
-    setupAnimations() {
-        // Add smooth transitions to stat cards
-        const statCards = document.querySelectorAll('.stat-card');
-        statCards.forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                card.style.transform = 'translateY(-4px)';
-            });
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'translateY(0)';
-            });
-        });
-    }
-
-    validateInput(input) {
-        const value = input.value.trim();
-        const type = input.type;
-        
-        if (type === 'email') {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (value && !emailRegex.test(value)) {
-                this.showInputError(input, 'Please enter a valid email address');
-                return false;
-            }
-        } else if (input.required && !value) {
-            this.showInputError(input, 'This field is required');
-            return false;
+        if (validateBtn) {
+            validateBtn.addEventListener('click', () => this.validatePayment());
         }
-        
-        this.clearInputError(input);
-        return true;
-    }
-
-    validateFormField(field) {
-        const value = field.value.trim();
-        const type = field.type;
-        const name = field.name || field.id;
-        
-        if (field.required && !value) {
-            this.showFieldError(field, 'This field is required');
-            return false;
+        if (fraudCheckBtn) {
+            fraudCheckBtn.addEventListener('click', () => this.performFraudCheck());
         }
-        
-        if (type === 'number' && value) {
-            const num = parseFloat(value);
-            if (isNaN(num) || num < 0) {
-                this.showFieldError(field, 'Please enter a valid positive number');
-                return false;
-            }
-        }
-        
-        this.clearFieldError(field);
-        return true;
-    }
-
-    validateIBAN(input) {
-        const iban = input.value.replace(/\s/g, '').toUpperCase();
-        
-        if (iban.length > 0) {
-            // Basic IBAN format validation
-            const ibanRegex = /^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/;
-            if (!ibanRegex.test(iban)) {
-                this.showFieldError(input, 'Invalid IBAN format');
-                return false;
-            }
-            
-            // Bulgarian IBAN specific validation
-            if (iban.startsWith('BG') && iban.length !== 22) {
-                this.showFieldError(input, 'Bulgarian IBAN must be 22 characters long');
-                return false;
-            }
-        }
-        
-        this.clearFieldError(input);
-        return true;
-    }
-
-    showInputError(input, message) {
-        this.clearInputError(input);
-        input.style.borderColor = 'var(--danger-500)';
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'input-error';
-        errorDiv.textContent = message;
-        errorDiv.style.color = 'var(--danger-500)';
-        errorDiv.style.fontSize = '0.75rem';
-        errorDiv.style.marginTop = '0.25rem';
-        input.parentNode.appendChild(errorDiv);
-    }
-
-    showFieldError(field, message) {
-        this.clearFieldError(field);
-        field.style.borderColor = 'var(--danger-500)';
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'field-error';
-        errorDiv.textContent = message;
-        errorDiv.style.color = 'var(--danger-500)';
-        errorDiv.style.fontSize = '0.75rem';
-        errorDiv.style.marginTop = '0.25rem';
-        field.parentNode.appendChild(errorDiv);
-    }
-
-    clearInputError(input) {
-        input.style.borderColor = '';
-        const errorDiv = input.parentNode.querySelector('.input-error');
-        if (errorDiv) {
-            errorDiv.remove();
-        }
-    }
-
-    clearFieldError(field) {
-        field.style.borderColor = '';
-        const errorDiv = field.parentNode.querySelector('.field-error');
-        if (errorDiv) {
-            errorDiv.remove();
-        }
-    }
-
-    handleKeyboardShortcuts(e) {
-        // Ctrl+Enter to submit forms
-        if (e.ctrlKey && e.key === 'Enter') {
-            const activeForm = document.activeElement.closest('form');
-            if (activeForm) {
-                e.preventDefault();
-                activeForm.dispatchEvent(new Event('submit'));
-            }
-        }
-        
-        // Escape to close messages
-        if (e.key === 'Escape') {
-            this.clearAllMessages();
+        if (unvalidateBtn) {
+            unvalidateBtn.addEventListener('click', () => this.unvalidatePayment());
         }
     }
 
     async handleLogin(e) {
         e.preventDefault();
         
-        const username = document.getElementById('username').value.trim();
+        const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-
-        // Validate inputs
-        if (!this.validateInput(document.getElementById('username')) || 
-            !this.validateInput(document.getElementById('password'))) {
-            return;
-        }
-
+        
         try {
-            this.showLoading(true, 'Authenticating...');
-            
             const response = await fetch(`${this.apiBaseUrl}/auth/login`, {
                 method: 'POST',
                 headers: {
@@ -218,591 +70,480 @@ class SupplierFraudDetectionApp {
                 body: JSON.stringify({ username, password })
             });
 
-            const data = await response.json();
-
             if (response.ok) {
+                const data = await response.json();
                 this.authToken = data.token;
-                localStorage.setItem('authToken', this.authToken);
-                this.showMessage('Login successful! Welcome to Fraud Shield', 'success');
-                this.updateAuthUI(true, data.user);
+                this.currentUser = username;
+                
+                // Save to localStorage
+                localStorage.setItem('fraudShieldToken', data.token);
+                localStorage.setItem('fraudShieldUser', username);
+                
                 this.showDashboard();
-                this.animateLoginSuccess();
+                this.showMessage('Login successful!', 'success');
             } else {
-                this.showMessage(data.error || 'Login failed. Please check your credentials.', 'error');
-                this.animateLoginError();
+                const error = await response.json();
+                this.showMessage(error.message || 'Login failed', 'error');
             }
         } catch (error) {
-            this.showMessage('Network error: Unable to connect to server', 'error');
-            console.error('Login error:', error);
-        } finally {
-            this.showLoading(false);
+            this.showMessage('Network error. Please try again.', 'error');
         }
     }
 
     handleLogout() {
         this.authToken = null;
-        localStorage.removeItem('authToken');
-        this.updateAuthUI(false);
-        this.showLoginRequired();
+        this.currentUser = null;
+        this.currentPayment = null;
+        
+        // Clear localStorage
+        localStorage.removeItem('fraudShieldToken');
+        localStorage.removeItem('fraudShieldUser');
+        
+        this.hideDashboard();
         this.showMessage('Logged out successfully', 'info');
-        this.animateLogout();
+        this.resetButtons();
     }
 
-    async handleFraudDetection(e) {
-        e.preventDefault();
+    checkAuthStatus() {
+        // Check if user is already logged in (in a real app, this would check localStorage or cookies)
+        // For demo purposes, we'll start logged out
+        const savedToken = localStorage.getItem('fraudShieldToken');
+        if (savedToken) {
+            this.authToken = savedToken;
+            this.currentUser = localStorage.getItem('fraudShieldUser') || 'User';
+            this.showDashboard();
+        } else {
+            this.hideDashboard();
+        }
+    }
+
+    showDashboard() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('welcomeMessage').textContent = `Welcome, ${this.currentUser || 'User'}`;
         
+        // Hide authentication required message
+        const loginRequired = document.getElementById('loginRequired');
+        if (loginRequired) {
+            loginRequired.style.display = 'none';
+        }
+    }
+
+    hideDashboard() {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('generatedPayment').style.display = 'none';
+        document.getElementById('results').style.display = 'none';
+        
+        // Show authentication required message
+        const loginRequired = document.getElementById('loginRequired');
+        if (loginRequired) {
+            loginRequired.style.display = 'block';
+        }
+    }
+
+    generatePayment() {
+        // Generate a random payment with 33% distribution for risk levels
+        const riskLevels = ['LOW', 'MEDIUM', 'HIGH'];
+        const randomRisk = riskLevels[Math.floor(Math.random() * riskLevels.length)];
+        
+        // Generate random Bulgarian IBANs
+        const ibans = this.generateRandomIBANs(2);
+        
+        this.currentPayment = {
+            invoiceId: `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            amount: parseFloat((Math.random() * 50000 + 100).toFixed(2)),
+            supplierIban: ibans[0],
+            supplierName: this.generateRandomSupplierName(),
+            supplierCountry: 'Bulgaria',
+            paymentPurpose: this.generateRandomPurpose(),
+            riskLevel: randomRisk,
+            generatedAt: new Date().toISOString()
+        };
+
+        this.displayGeneratedPayment();
+        this.enableButtons(['validatePaymentBtn', 'fraudCheckBtn', 'unvalidatePaymentBtn']);
+        this.showMessage('Payment generated successfully!', 'success');
+    }
+
+    generateRandomIBANs(count) {
+        const bankCodes = ['BANK', 'BNBG', 'CITI', 'UNCR', 'UBBS', 'DSK', 'FIB', 'PIR', 'POST', 'SGB'];
+        const ibans = [];
+        
+        for (let i = 0; i < count; i++) {
+            const bankCode = bankCodes[Math.floor(Math.random() * bankCodes.length)];
+            const accountNumber = Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
+            const additionalDigits = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+            const checkDigits = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+            
+            ibans.push(`BG${checkDigits}${bankCode}${accountNumber}${additionalDigits}`);
+        }
+        
+        return ibans;
+    }
+
+    generateRandomSupplierName() {
+        const companies = [
+            'ACME Corporation Ltd', 'Global Solutions Inc', 'Tech Innovations Ltd',
+            'Business Partners Co', 'Advanced Systems Ltd', 'Creative Solutions Inc',
+            'Dynamic Enterprises Ltd', 'Future Technologies Co', 'Smart Business Ltd',
+            'Professional Services Inc'
+        ];
+        return companies[Math.floor(Math.random() * companies.length)];
+    }
+
+    generateRandomPurpose() {
+        const purposes = [
+            'Invoice payment', 'Service fee', 'Product delivery',
+            'Consulting services', 'Software license', 'Maintenance contract',
+            'Training services', 'Equipment purchase', 'Project milestone',
+            'Monthly subscription'
+        ];
+        return purposes[Math.floor(Math.random() * purposes.length)];
+    }
+
+    displayGeneratedPayment() {
+        document.getElementById('genInvoiceId').textContent = this.currentPayment.invoiceId;
+        document.getElementById('genAmount').textContent = `${this.currentPayment.amount} BGN`;
+        document.getElementById('genSupplierIban').textContent = this.currentPayment.supplierIban;
+        document.getElementById('genSupplierName').textContent = this.currentPayment.supplierName;
+        document.getElementById('genSupplierCountry').textContent = this.currentPayment.supplierCountry;
+        document.getElementById('genPaymentPurpose').textContent = this.currentPayment.paymentPurpose;
+        
+        document.getElementById('generatedPayment').style.display = 'block';
+    }
+
+    async validatePayment() {
+        if (!this.currentPayment) {
+            this.showMessage('No payment to validate. Please generate a payment first.', 'error');
+            return;
+        }
+
+        try {
+            const startTime = Date.now();
+            
+            // Simulate payment validation (in real app, this would call the API)
+            const validationResult = await this.simulatePaymentValidation();
+            
+            const responseTime = Date.now() - startTime;
+            
+            this.showMessage(`Payment validated successfully in ${responseTime}ms`, 'success');
+            this.updateStats(responseTime, true);
+            
+        } catch (error) {
+            this.showMessage('Payment validation failed', 'error');
+        }
+    }
+
+    async performFraudCheck() {
+        if (!this.currentPayment) {
+            this.showMessage('No payment to check. Please generate a payment first.', 'error');
+            return;
+        }
+
         if (!this.authToken) {
             this.showMessage('Please login first', 'error');
             return;
         }
 
-        // Validate all form fields
-        const form = e.target;
-        const inputs = form.querySelectorAll('input[required], select[required]');
-        let isValid = true;
-        
-        inputs.forEach(input => {
-            if (!this.validateFormField(input)) {
-                isValid = false;
-            }
-        });
-
-        if (!isValid) {
-            this.showMessage('Please fix the form errors before submitting', 'error');
-            return;
-        }
-
-        const formData = {
-            invoiceId: document.getElementById('invoiceId').value.trim(),
-            supplierIban: document.getElementById('supplierIban').value.trim(),
-            amount: parseFloat(document.getElementById('amount').value),
-            supplierName: document.getElementById('supplierName').value.trim(),
-            supplierCountry: document.getElementById('supplierCountry').value.trim() || null,
-            paymentPurpose: document.getElementById('paymentPurpose').value.trim() || null
-        };
-
         try {
-            this.showLoading(true, 'Analyzing payment for fraud...');
-            const validateBtn = document.getElementById('validateBtn');
-            validateBtn.disabled = true;
-            validateBtn.innerHTML = `
-                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Validating...
-            `;
-
-            const startTime = performance.now();
+            const startTime = Date.now();
+            
             const response = await fetch(`${this.apiBaseUrl}/v1/fraud-detection/validate-payment`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.authToken}`
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(this.currentPayment)
             });
 
-            const endTime = performance.now();
-            const networkTime = Math.round(endTime - startTime);
-
-            const data = await response.json();
-
+            const responseTime = Date.now() - startTime;
+            
             if (response.ok) {
-                // Add network time to response time
-                data.responseTimeMs = (data.responseTimeMs || 0) + networkTime;
+                const result = await response.json();
+                this.displayFraudResults(result, responseTime);
+                this.updateStats(responseTime, true);
                 
-                this.displayValidationResult(data);
-                this.addToRecentValidations(data);
-                this.updateStats(data);
+                // Save to recent validations
+                this.saveValidation({
+                    ...this.currentPayment,
+                    result: result,
+                    responseTime: responseTime,
+                    timestamp: new Date().toISOString()
+                });
                 
-                if (data.riskStatus === 'ALLOW') {
-                    this.showMessage('Fraud analysis completed - Payment can be processed!', 'success');
-                } else if (data.riskStatus === 'REVIEW') {
-                    this.showMessage('Fraud analysis completed - Manual review recommended', 'warning');
-                } else if (data.riskStatus === 'BLOCK') {
-                    this.showMessage('Fraud analysis completed - Payment should be blocked', 'error');
-                } else {
-                    this.showMessage('Fraud analysis completed', 'info');
-                }
-                
-                this.animateValidationSuccess();
+                this.loadRecentValidations();
             } else {
-                this.showMessage(data.error || 'Fraud analysis failed', 'error');
-                this.animateValidationError();
+                const error = await response.json();
+                this.showMessage(`Fraud check failed: ${error.reason || 'Unknown error'}`, 'error');
+                this.updateStats(responseTime, false);
             }
+            
         } catch (error) {
-            this.showMessage('Network error: Unable to analyze payment for fraud', 'error');
-            console.error('Validation error:', error);
-        } finally {
-            this.showLoading(false);
-            const validateBtn = document.getElementById('validateBtn');
-            validateBtn.disabled = false;
-            validateBtn.innerHTML = `
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Analyze for Fraud
-            `;
+            this.showMessage('Network error during fraud check', 'error');
+            console.error('Fraud check error:', error);
         }
     }
 
-    displayValidationResult(data) {
-        const resultsDiv = document.getElementById('results');
-        const riskStatusSpan = document.getElementById('riskStatus');
-        const riskLevelSpan = document.getElementById('riskLevel');
-        const invoiceIdSpan = document.getElementById('resultInvoiceId');
-        const supplierNameSpan = document.getElementById('resultSupplierName');
-        const supplierIbanSpan = document.getElementById('resultSupplierIban');
-        const amountSpan = document.getElementById('resultAmount');
-        const riskStatusTextSpan = document.getElementById('riskStatusText');
-        const reasonSpan = document.getElementById('reason');
-        const transactionIdSpan = document.getElementById('transactionId');
-        const manualReviewSpan = document.getElementById('manualReview');
-        const anomaliesList = document.getElementById('anomaliesList');
+    unvalidatePayment() {
+        this.currentPayment = null;
+        document.getElementById('generatedPayment').style.display = 'none';
+        document.getElementById('results').style.display = 'none';
+        this.resetButtons();
+        this.showMessage('Payment unvalidated and cleared', 'info');
+    }
 
-        // Update risk status with animation
-        riskStatusSpan.textContent = data.riskStatus;
-        riskStatusSpan.className = `fraud-status ${data.riskStatus}`;
+    async simulatePaymentValidation() {
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
         
-        // Add pulse animation for high-risk results
-        if (data.riskStatus === 'REVIEW' || data.riskStatus === 'BLOCK') {
-            riskStatusSpan.style.animation = 'pulse 2s infinite';
-        } else {
-            riskStatusSpan.style.animation = '';
-        }
-        
-        riskLevelSpan.textContent = data.riskLevel;
-        invoiceIdSpan.textContent = data.invoiceId;
-        supplierNameSpan.textContent = data.supplierName || 'N/A';
-        supplierIbanSpan.textContent = data.supplierIban || 'N/A';
-        amountSpan.textContent = data.amount || 'N/A';
-        riskStatusTextSpan.textContent = data.riskStatus;
-        reasonSpan.textContent = data.reason || 'No specific reason provided';
-        transactionIdSpan.textContent = data.transactionId || 'N/A';
-        manualReviewSpan.textContent = data.requiresManualReview ? 'Yes' : 'No';
-
-        // Display anomalies with better formatting
-        anomaliesList.innerHTML = '';
-        if (data.anomalies && data.anomalies.length > 0) {
-            data.anomalies.forEach((anomaly, index) => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span class="anomaly-icon">⚠️</span>
-                    <span class="anomaly-text">${anomaly}</span>
-                `;
-                li.style.animationDelay = `${index * 0.1}s`;
-                li.style.animation = 'fadeInUp 0.5s ease-out forwards';
-                anomaliesList.appendChild(li);
-            });
-        } else {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <span class="anomaly-icon">✅</span>
-                <span class="anomaly-text no-anomalies">No anomalies detected</span>
-            `;
-            anomaliesList.appendChild(li);
-        }
-
-        // Show results with animation
-        resultsDiv.style.display = 'block';
-        resultsDiv.style.opacity = '0';
-        resultsDiv.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            resultsDiv.style.transition = 'all 0.5s ease-out';
-            resultsDiv.style.opacity = '1';
-            resultsDiv.style.transform = 'translateY(0)';
-            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-    }
-
-    addToRecentValidations(data) {
-        this.validations.unshift({
-            ...data,
-            timestamp: new Date(data.timestamp)
-        });
-
-        // Keep only last 10 validations
-        if (this.validations.length > 10) {
-            this.validations = this.validations.slice(0, 10);
-        }
-
-        this.renderRecentValidations();
-        this.saveRecentValidations();
-    }
-
-    renderRecentValidations() {
-        const recentList = document.getElementById('recentList');
-        recentList.innerHTML = '';
-
-        if (this.validations.length === 0) {
-            recentList.innerHTML = `
-                <div class="empty-state">
-                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <p class="text-gray-500 text-center">No validations yet</p>
-                    <p class="text-gray-400 text-sm text-center">Submit your first payment validation to see results here</p>
-                </div>
-            `;
-            return;
-        }
-
-        this.validations.forEach((validation, index) => {
-            const item = document.createElement('div');
-            item.className = `validation-item ${validation.fraudStatus}`;
-            item.style.animationDelay = `${index * 0.1}s`;
-            item.style.animation = 'fadeInUp 0.5s ease-out forwards';
-            
-            const statusColors = {
-                'SAFE': 'var(--success-500)',
-                'SUSPICIOUS': 'var(--warning-500)',
-                'HIGH_RISK': '#f97316',
-                'BLOCKED': 'var(--danger-500)'
-            };
-            
-            item.innerHTML = `
-                <div class="validation-item-header">
-                    <span class="validation-item-status" style="background-color: ${statusColors[validation.fraudStatus]}">
-                        ${validation.fraudStatus}
-                    </span>
-                    <span class="validation-item-time">${validation.timestamp.toLocaleString()}</span>
-                </div>
-                <div class="validation-item-details">
-                    <strong>${validation.invoiceId}</strong> - ${validation.supplierName}
-                    <br>
-                    <small>${validation.responseTimeMs}ms - ${validation.recommendation}</small>
-                </div>
-            `;
-            
-            recentList.appendChild(item);
-        });
-    }
-
-    updateStats(data) {
-        this.stats.totalPayments = this.validations.length;
-        
-        // Calculate fraud detected
-        this.stats.fraudDetected = this.validations.filter(v => 
-            v.fraudStatus === 'SUSPICIOUS' || v.fraudStatus === 'HIGH_RISK' || v.fraudStatus === 'BLOCKED'
-        ).length;
-
-        // Calculate average response time
-        if (this.validations.length > 0) {
-            this.stats.avgResponseTime = Math.round(
-                this.validations.reduce((sum, v) => sum + v.responseTimeMs, 0) / this.validations.length
-            );
-
-            // Calculate success rate (acceptable response times)
-            const acceptableCount = this.validations.filter(v => v.responseTimeMs <= 200).length;
-            this.stats.successRate = Math.round((acceptableCount / this.validations.length) * 100);
-        }
-
-        // Update UI with animation
-        this.animateStatUpdate('totalPayments', this.stats.totalPayments);
-        this.animateStatUpdate('fraudDetected', this.stats.fraudDetected);
-        this.animateStatUpdate('avgResponseTime', this.stats.avgResponseTime);
-        this.animateStatUpdate('successRate', this.stats.successRate);
-    }
-
-    animateStatUpdate(statId, newValue) {
-        const element = document.getElementById(statId);
-        if (element) {
-            const currentValue = parseInt(element.textContent) || 0;
-            const increment = (newValue - currentValue) / 20;
-            let current = currentValue;
-            
-            const timer = setInterval(() => {
-                current += increment;
-                if ((increment > 0 && current >= newValue) || (increment < 0 && current <= newValue)) {
-                    element.textContent = newValue;
-                    clearInterval(timer);
-                } else {
-                    element.textContent = Math.round(current);
-                }
-            }, 50);
-        }
-    }
-
-    checkAuthStatus() {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            this.authToken = token;
-            this.validateToken();
-        } else {
-            this.showLoginRequired();
-        }
-    }
-
-    async validateToken() {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/auth/validate`, {
-                headers: {
-                    'Authorization': `Bearer ${this.authToken}`
-                }
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.valid) {
-                this.updateAuthUI(true, { username: 'admin' });
-                this.showDashboard();
-            } else {
-                this.handleLogout();
-            }
-        } catch (error) {
-            console.error('Token validation error:', error);
-            this.handleLogout();
-        }
-    }
-
-    updateAuthUI(isLoggedIn, user = null) {
-        const loginForm = document.getElementById('loginForm');
-        const userInfo = document.getElementById('userInfo');
-        const welcomeMessage = document.getElementById('welcomeMessage');
-
-        if (isLoggedIn) {
-            loginForm.style.display = 'none';
-            userInfo.style.display = 'flex';
-            if (welcomeMessage && user) {
-                welcomeMessage.textContent = `Welcome, ${user.username}!`;
-            }
-        } else {
-            loginForm.style.display = 'block';
-            userInfo.style.display = 'none';
-        }
-    }
-
-    showDashboard() {
-        const dashboard = document.getElementById('dashboard');
-        const loginRequired = document.getElementById('loginRequired');
-        
-        dashboard.style.display = 'block';
-        loginRequired.style.display = 'none';
-        
-        // Animate dashboard appearance
-        dashboard.style.opacity = '0';
-        dashboard.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            dashboard.style.transition = 'all 0.5s ease-out';
-            dashboard.style.opacity = '1';
-            dashboard.style.transform = 'translateY(0)';
-        }, 100);
-    }
-
-    showLoginRequired() {
-        const dashboard = document.getElementById('dashboard');
-        const loginRequired = document.getElementById('loginRequired');
-        
-        dashboard.style.display = 'none';
-        loginRequired.style.display = 'block';
-        
-        // Animate login required appearance
-        loginRequired.style.opacity = '0';
-        loginRequired.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            loginRequired.style.transition = 'all 0.5s ease-out';
-            loginRequired.style.opacity = '1';
-            loginRequired.style.transform = 'translateY(0)';
-        }, 100);
-    }
-
-    showLoading(show, message = 'Loading...') {
-        const overlay = document.getElementById('loadingOverlay');
-        const loadingText = overlay.querySelector('p');
-        
-        if (loadingText) {
-            loadingText.textContent = message;
-        }
-        
-        overlay.style.display = show ? 'flex' : 'none';
-        
-        if (show) {
-            overlay.style.opacity = '0';
-            setTimeout(() => {
-                overlay.style.transition = 'opacity 0.3s ease-out';
-                overlay.style.opacity = '1';
-            }, 10);
-        }
-    }
-
-    showMessage(message, type = 'info') {
-        const container = document.getElementById('messageContainer');
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${type}`;
-        messageDiv.innerHTML = `
-            <div class="flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    ${this.getMessageIcon(type)}
-                </svg>
-                <span>${message}</span>
-            </div>
-        `;
-
-        container.appendChild(messageDiv);
-
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (messageDiv.parentNode) {
-                messageDiv.style.transition = 'all 0.3s ease-out';
-                messageDiv.style.transform = 'translateX(100%)';
-                messageDiv.style.opacity = '0';
-                setTimeout(() => {
-                    if (messageDiv.parentNode) {
-                        messageDiv.parentNode.removeChild(messageDiv);
-                    }
-                }, 300);
-            }
-        }, 5000);
-    }
-
-    getMessageIcon(type) {
-        const icons = {
-            success: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>',
-            error: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>',
-            warning: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>',
-            info: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
+        // Simulate validation result based on risk level
+        const riskLevel = this.currentPayment.riskLevel;
+        return {
+            valid: riskLevel !== 'HIGH',
+            riskLevel: riskLevel,
+            message: riskLevel === 'HIGH' ? 'High risk payment detected' : 'Payment appears valid'
         };
-        return icons[type] || icons.info;
     }
 
-    clearAllMessages() {
-        const container = document.getElementById('messageContainer');
-        container.innerHTML = '';
+    displayFraudResults(result, responseTime) {
+        const resultsDiv = document.getElementById('results');
+        
+        // Update result elements
+        document.getElementById('riskStatus').textContent = result.riskStatus || 'UNKNOWN';
+        document.getElementById('riskLevel').textContent = result.riskLevel || 'UNKNOWN';
+        document.getElementById('resultInvoiceId').textContent = result.invoiceId || this.currentPayment.invoiceId;
+        document.getElementById('resultSupplierName').textContent = result.supplierName || this.currentPayment.supplierName;
+        document.getElementById('resultSupplierIban').textContent = result.supplierIban || this.currentPayment.supplierIban;
+        document.getElementById('resultAmount').textContent = result.amount || this.currentPayment.amount;
+        document.getElementById('resultReason').textContent = result.reason || 'No specific reason provided';
+        document.getElementById('resultTransactionId').textContent = result.transactionId || 'N/A';
+        document.getElementById('resultManualReview').textContent = result.requiresManualReview ? 'Yes' : 'No';
+        document.getElementById('resultResponseTime').textContent = `${responseTime}ms`;
+        
+        // Update anomalies
+        const anomaliesList = document.getElementById('anomaliesList');
+        if (anomaliesList) {
+            anomaliesList.innerHTML = '';
+            if (result.anomalies && result.anomalies.length > 0) {
+                result.anomalies.forEach(anomaly => {
+                    const li = document.createElement('li');
+                    li.textContent = anomaly;
+                    anomaliesList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No anomalies detected';
+                li.className = 'no-anomalies';
+                anomaliesList.appendChild(li);
+            }
+        }
+        
+        // Update risk status styling
+        const riskStatusElement = document.getElementById('riskStatus');
+        riskStatusElement.className = `fraud-status ${(result.riskStatus || '').toLowerCase()}`;
+        
+        resultsDiv.style.display = 'block';
+        this.showMessage(`Fraud analysis completed in ${responseTime}ms`, 'success');
+    }
+
+    enableButtons(buttonIds) {
+        buttonIds.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+            }
+        });
+    }
+
+    resetButtons() {
+        const buttons = ['validatePaymentBtn', 'fraudCheckBtn', 'unvalidatePaymentBtn'];
+        buttons.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('disabled');
+            }
+        });
+    }
+
+    updateStats(responseTime, success) {
+        this.stats.totalPayments++;
+        if (!success) this.stats.fraudDetected++;
+        
+        // Update average response time
+        this.stats.avgResponseTime = Math.round(
+            (this.stats.avgResponseTime * (this.stats.totalPayments - 1) + responseTime) / this.stats.totalPayments
+        );
+        
+        // Update success rate
+        this.stats.successRate = Math.round(
+            ((this.stats.totalPayments - this.stats.fraudDetected) / this.stats.totalPayments) * 100
+        );
+        
+        this.updateStatsDisplay();
+    }
+
+    updateStatsDisplay() {
+        document.getElementById('totalPayments').textContent = this.stats.totalPayments;
+        document.getElementById('fraudDetected').textContent = this.stats.fraudDetected;
+        document.getElementById('avgResponseTime').textContent = `${this.stats.avgResponseTime}ms`;
+        document.getElementById('successRate').textContent = `${this.stats.successRate}%`;
     }
 
     loadRecentValidations() {
-        const saved = localStorage.getItem('recentValidations');
+        // Load recent validations from localStorage or API
+        const saved = localStorage.getItem('fraudShieldValidations');
         if (saved) {
-            try {
-                this.validations = JSON.parse(saved).map(v => ({
-                    ...v,
-                    timestamp: new Date(v.timestamp)
-                }));
-                this.renderRecentValidations();
-                this.updateStats({});
-            } catch (error) {
-                console.error('Error loading recent validations:', error);
-            }
+            this.validations = JSON.parse(saved);
         }
+        
+        // Update the recent validations display
+        this.updateRecentValidationsDisplay();
+    }
+    
+    updateRecentValidationsDisplay() {
+        const recentValidationsDiv = document.getElementById('recentValidations');
+        if (!recentValidationsDiv) return;
+        
+        if (this.validations.length === 0) {
+            recentValidationsDiv.innerHTML = '<p class="no-validations">No recent validations</p>';
+            return;
+        }
+        
+        const validationsHtml = this.validations.slice(0, 5).map(validation => `
+            <div class="validation-item">
+                <div class="validation-header">
+                    <span class="invoice-id">${validation.invoiceId}</span>
+                    <span class="risk-status ${(validation.result?.riskStatus || 'UNKNOWN').toLowerCase()}">
+                        ${validation.result?.riskStatus || 'UNKNOWN'}
+                    </span>
+                </div>
+                <div class="validation-details">
+                    <span class="supplier">${validation.supplierName}</span>
+                    <span class="amount">${validation.amount} BGN</span>
+                    <span class="time">${validation.responseTime}ms</span>
+                </div>
+                <div class="validation-timestamp">
+                    ${new Date(validation.timestamp).toLocaleString()}
+                </div>
+            </div>
+        `).join('');
+        
+        recentValidationsDiv.innerHTML = validationsHtml;
     }
 
-    saveRecentValidations() {
-        localStorage.setItem('recentValidations', JSON.stringify(this.validations));
+    saveValidation(validation) {
+        this.validations.unshift(validation);
+        if (this.validations.length > 10) {
+            this.validations = this.validations.slice(0, 10);
+        }
+        localStorage.setItem('fraudShieldValidations', JSON.stringify(this.validations));
     }
 
-    // Animation methods
-    animateLoginSuccess() {
-        const loginForm = document.getElementById('loginForm');
-        loginForm.style.transform = 'scale(0.95)';
-        loginForm.style.transition = 'transform 0.2s ease-out';
+    showMessage(message, type = 'info') {
+        // Create or update message element
+        let messageDiv = document.getElementById('messageDiv');
+        if (!messageDiv) {
+            messageDiv = document.createElement('div');
+            messageDiv.id = 'messageDiv';
+            messageDiv.className = 'message';
+            document.body.appendChild(messageDiv);
+        }
+        
+        messageDiv.textContent = message;
+        messageDiv.className = `message message-${type}`;
+        messageDiv.style.display = 'block';
+        
+        // Auto-hide after 3 seconds
         setTimeout(() => {
-            loginForm.style.transform = 'scale(1)';
-        }, 200);
+            messageDiv.style.display = 'none';
+        }, 3000);
     }
 
-    animateLoginError() {
-        const loginForm = document.getElementById('loginForm');
-        loginForm.style.animation = 'shake 0.5s ease-in-out';
-        setTimeout(() => {
-            loginForm.style.animation = '';
-        }, 500);
-    }
-
-    animateLogout() {
-        const userInfo = document.getElementById('userInfo');
-        userInfo.style.animation = 'fadeOut 0.3s ease-out';
-    }
-
-    animateValidationSuccess() {
-        const validateBtn = document.getElementById('validateBtn');
-        validateBtn.style.animation = 'pulse 0.5s ease-out';
-        setTimeout(() => {
-            validateBtn.style.animation = '';
-        }, 500);
-    }
-
-    animateValidationError() {
-        const validateBtn = document.getElementById('validateBtn');
-        validateBtn.style.animation = 'shake 0.5s ease-in-out';
-        setTimeout(() => {
-            validateBtn.style.animation = '';
-        }, 500);
+    setupAnimations() {
+        // Add smooth animations for better UX
+        const style = document.createElement('style');
+        style.textContent = `
+            .message {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 6px;
+                color: white;
+                font-weight: 500;
+                z-index: 1000;
+                transition: all 0.3s ease;
+            }
+            .message-success { background-color: #10b981; }
+            .message-error { background-color: #ef4444; }
+            .message-warning { background-color: #f59e0b; }
+            .message-info { background-color: #3b82f6; }
+            
+            .btn-primary { background-color: #3b82f6; color: white; }
+            .btn-secondary { background-color: #6b7280; color: white; }
+            .btn-warning { background-color: #f59e0b; color: white; }
+            .btn-danger { background-color: #ef4444; color: white; }
+            
+            .btn-primary:hover { background-color: #2563eb; }
+            .btn-secondary:hover { background-color: #4b5563; }
+            .btn-warning:hover { background-color: #d97706; }
+            .btn-danger:hover { background-color: #dc2626; }
+            
+            .disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            
+            .generated-payment {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 20px;
+                margin: 20px 0;
+            }
+            
+            .payment-card h4 {
+                margin: 0 0 15px 0;
+                color: #1e293b;
+            }
+            
+            .payment-details {
+                display: grid;
+                gap: 10px;
+            }
+            
+            .payment-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 8px 0;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            
+            .payment-row:last-child {
+                border-bottom: none;
+            }
+            
+            .payment-row .label {
+                font-weight: 600;
+                color: #64748b;
+            }
+            
+            .payment-row .value {
+                color: #1e293b;
+                font-family: monospace;
+            }
+        `;
+        document.head.appendChild(style);
     }
 }
 
-// Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-5px); }
-        75% { transform: translateX(5px); }
-    }
-    
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-    }
-    
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    @keyframes fadeOut {
-        from {
-            opacity: 1;
-            transform: scale(1);
-        }
-        to {
-            opacity: 0;
-            transform: scale(0.95);
-        }
-    }
-    
-    .anomaly-icon {
-        margin-right: 0.5rem;
-    }
-    
-    .anomaly-text {
-        font-size: 0.875rem;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 2rem;
-        color: var(--gray-500);
-    }
-    
-    .input-error, .field-error {
-        display: block;
-        margin-top: 0.25rem;
-        font-size: 0.75rem;
-        color: var(--danger-500);
-    }
-`;
-document.head.appendChild(style);
-
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.supplierFraudApp = new SupplierFraudDetectionApp();
-    
-    // Save validations periodically
-    setInterval(() => {
-        if (window.supplierFraudApp) {
-            window.supplierFraudApp.saveRecentValidations();
-        }
-    }, 30000); // Every 30 seconds
-});
-
-// Handle page unload
-window.addEventListener('beforeunload', () => {
-    if (window.supplierFraudApp) {
-        window.supplierFraudApp.saveRecentValidations();
-    }
+    new PaymentFraudDetectionApp();
 });
