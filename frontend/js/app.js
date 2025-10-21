@@ -123,11 +123,17 @@ class PaymentFraudDetectionApp {
         document.getElementById('dashboard').style.display = 'block';
         document.getElementById('welcomeMessage').textContent = `Welcome, ${this.currentUser || 'User'}`;
         
-        // Hide authentication required message
-        const loginRequired = document.getElementById('loginRequired');
-        if (loginRequired) {
-            loginRequired.style.display = 'none';
+        // Show footer on dashboard
+        const footer = document.querySelector('.footer');
+        if (footer) {
+            footer.style.display = 'block';
         }
+        
+        // Allow vertical scrolling for dashboard, prevent horizontal
+        document.body.style.overflow = 'auto';
+        document.body.style.overflowX = 'hidden';
+        document.documentElement.style.overflow = 'auto';
+        document.documentElement.style.overflowX = 'hidden';
     }
 
     hideDashboard() {
@@ -137,11 +143,17 @@ class PaymentFraudDetectionApp {
         document.getElementById('generatedPayment').style.display = 'none';
         document.getElementById('results').style.display = 'none';
         
-        // Show authentication required message
-        const loginRequired = document.getElementById('loginRequired');
-        if (loginRequired) {
-            loginRequired.style.display = 'block';
+        // Hide footer on login page
+        const footer = document.querySelector('.footer');
+        if (footer) {
+            footer.style.display = 'none';
         }
+        
+        // Prevent scrolling for login page
+        document.body.style.overflow = 'hidden';
+        document.body.style.overflowX = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+        document.documentElement.style.overflowX = 'hidden';
     }
 
     generatePayment() {
@@ -251,6 +263,10 @@ class PaymentFraudDetectionApp {
         try {
             const startTime = Date.now();
             
+            console.log('Making fraud check request to:', `${this.apiBaseUrl}/v1/fraud-detection/validate-payment`);
+            console.log('Request payload:', this.currentPayment);
+            console.log('Auth token:', this.authToken ? 'Present' : 'Missing');
+            
             const response = await fetch(`${this.apiBaseUrl}/v1/fraud-detection/validate-payment`, {
                 method: 'POST',
                 headers: {
@@ -283,8 +299,10 @@ class PaymentFraudDetectionApp {
             }
             
         } catch (error) {
-            this.showMessage('Network error during fraud check', 'error');
-            console.error('Fraud check error:', error);
+            console.error('Fraud check error details:', error);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+            this.showMessage(`Network error during fraud check: ${error.message}`, 'error');
         }
     }
 
@@ -318,11 +336,21 @@ class PaymentFraudDetectionApp {
         document.getElementById('resultInvoiceId').textContent = result.invoiceId || this.currentPayment.invoiceId;
         document.getElementById('resultSupplierName').textContent = result.supplierName || this.currentPayment.supplierName;
         document.getElementById('resultSupplierIban').textContent = result.supplierIban || this.currentPayment.supplierIban;
-        document.getElementById('resultAmount').textContent = result.amount || this.currentPayment.amount;
-        document.getElementById('resultReason').textContent = result.reason || 'No specific reason provided';
-        document.getElementById('resultTransactionId').textContent = result.transactionId || 'N/A';
-        document.getElementById('resultManualReview').textContent = result.requiresManualReview ? 'Yes' : 'No';
-        document.getElementById('resultResponseTime').textContent = `${responseTime}ms`;
+        document.getElementById('resultAmount').textContent = `${result.amount || this.currentPayment.amount} BGN`;
+        document.getElementById('reason').textContent = result.reason || 'No specific reason provided';
+        document.getElementById('transactionId').textContent = result.transactionId || 'N/A';
+        document.getElementById('manualReview').textContent = result.requiresManualReview ? 'Yes' : 'No';
+        
+        // Add response time to risk status text if element exists
+        const riskStatusText = document.getElementById('riskStatusText');
+        if (riskStatusText) {
+            riskStatusText.textContent = `${result.riskStatus || 'UNKNOWN'} (${responseTime}ms)`;
+        }
+        
+        // Show results
+        if (resultsDiv) {
+            resultsDiv.style.display = 'block';
+        }
         
         // Update anomalies
         const anomaliesList = document.getElementById('anomaliesList');

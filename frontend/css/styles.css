@@ -62,12 +62,21 @@
     --gray-900: #111827;
 }
 
+html, body {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.6;
     color: var(--gray-900);
     background: linear-gradient(135deg, var(--gray-50) 0%, #e0f2fe 100%);
-    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .container {
@@ -114,7 +123,9 @@ body {
 .auth-section {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 1rem;
+    width: 100%;
 }
 
 .auth-form {
@@ -123,10 +134,11 @@ body {
 
 .auth-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 16px;
-    padding: 32px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    min-width: 400px;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    min-width: 350px;
+    max-width: 400px;
     position: relative;
     overflow: hidden;
 }
@@ -145,20 +157,20 @@ body {
 
 .auth-header {
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     position: relative;
     z-index: 1;
 }
 
 .auth-icon {
-    width: 64px;
-    height: 64px;
+    width: 48px;
+    height: 48px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 16px;
+    margin: 0 auto 12px;
     color: white;
 }
 
@@ -219,18 +231,18 @@ body {
 
 .auth-submit-btn {
     width: 100%;
-    padding: 16px 24px;
+    padding: 12px 20px;
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 16px;
+    border-radius: 8px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
@@ -358,8 +370,18 @@ body {
 /* Main Content */
 .main-content {
     background: transparent;
-    padding: 2rem 0;
-    min-height: calc(100vh - 200px);
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+}
+
+/* Full screen for login page */
+body:not(:has(.dashboard)) .main-content {
+    height: 100vh;
 }
 
 /* Dashboard */
@@ -371,10 +393,22 @@ body {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     border: 1px solid var(--gray-200);
     margin-bottom: 2rem;
+    width: 100%;
+    max-width: 1200px;
 }
 
 .dashboard-header {
     margin-bottom: 2rem;
+}
+
+/* When dashboard is shown, override main-content flex centering */
+.main-content:has(.dashboard) {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 1rem;
+    overflow-y: visible;
+    height: auto;
+    min-height: calc(100vh - 160px);
 }
 
 .dashboard-header h2 {
@@ -907,6 +941,11 @@ body {
     border-top: 1px solid var(--gray-200);
     width: 100%;
     margin-top: 3rem;
+}
+
+/* Hide footer on login page */
+body:not(:has(.dashboard)) .footer {
+    display: none;
 }
 
 .footer .container {
