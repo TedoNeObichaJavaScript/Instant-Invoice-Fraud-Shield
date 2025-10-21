@@ -132,9 +132,9 @@ test-results/
 jmeter-results/
 stress_tests/results/
 
-# SSL certificates
+# SSL certificates (except development self-signed certs)
 *.pem
-*.key
-*.crt
+!frontend/ssl/*.key
+!frontend/ssl/*.crt
 *.p12
 *.pfx
