@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:microservices_db}
     username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:postgres123}
+    password: ${POSTGRES_PASSWORD:CHANGE_THIS_SECURE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   flyway:
     enabled: true

@@ -121,7 +121,7 @@
                 <configuration>
                     <url>jdbc:postgresql://localhost:5432/microservices_db</url>
                     <user>postgres</user>
-                    <password>postgres123</password>
+                    <password>${env.POSTGRES_PASSWORD}</password>
                     <locations>
                         <location>filesystem:database/migrations</location>
                     </locations>
