@@ -16,12 +16,15 @@ BEGIN
         -- Insert batch
         INSERT INTO risk.iban_risk_lookup (iban, bank_code, account_number, risk_level, country_code)
         SELECT 
-            generate_bg_iban() as iban,
-            substr(iban, 5, 4) as bank_code,
-            substr(iban, 9) as account_number,
+            iban_value as iban,
+            substr(iban_value, 5, 4) as bank_code,
+            substr(iban_value, 9) as account_number,
             generate_risk_level() as risk_level,
             'BG' as country_code
-        FROM generate_series(1, LEAST(batch_size, total_records - records_inserted));
+        FROM (
+            SELECT generate_bg_iban() as iban_value
+            FROM generate_series(1, LEAST(batch_size, total_records - records_inserted))
+        ) t;
         
         records_inserted := records_inserted + LEAST(batch_size, total_records - records_inserted);
         current_batch := current_batch + 1;
