@@ -26,27 +26,27 @@ public class GatewayController {
         this.auditService = auditService;
     }
 
-    @GetMapping("/accounts/**")
+    @GetMapping("/suppliers/**")
     public ResponseEntity<String> forwardGetRequest(@RequestHeader("Authorization") String authHeader,
                                                   HttpServletRequest request) {
         return handleRequest(authHeader, request, HttpMethod.GET, null);
     }
 
-    @PostMapping("/accounts/**")
+    @PostMapping("/suppliers/**")
     public ResponseEntity<String> forwardPostRequest(@RequestHeader("Authorization") String authHeader,
                                                    @RequestBody(required = false) String requestBody,
                                                    HttpServletRequest request) {
         return handleRequest(authHeader, request, HttpMethod.POST, requestBody);
     }
 
-    @PutMapping("/accounts/**")
+    @PutMapping("/suppliers/**")
     public ResponseEntity<String> forwardPutRequest(@RequestHeader("Authorization") String authHeader,
                                                   @RequestBody(required = false) String requestBody,
                                                   HttpServletRequest request) {
         return handleRequest(authHeader, request, HttpMethod.PUT, requestBody);
     }
 
-    @DeleteMapping("/accounts/**")
+    @DeleteMapping("/suppliers/**")
     public ResponseEntity<String> forwardDeleteRequest(@RequestHeader("Authorization") String authHeader,
                                                      HttpServletRequest request) {
         return handleRequest(authHeader, request, HttpMethod.DELETE, null);
