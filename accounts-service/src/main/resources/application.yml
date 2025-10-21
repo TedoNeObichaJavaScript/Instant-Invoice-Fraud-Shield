@@ -1,33 +1,39 @@
-# Application Configuration
-spring.application.name=accounts-service
-server.port=8081
+spring:
+  application:
+    name: accounts-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:microservices_db}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres123}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
 
-# Database Configuration
-spring.datasource.url=jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:microservices_db}
-spring.datasource.username=${POSTGRES_USER:postgres}
-spring.datasource.password=${POSTGRES_PASSWORD:postgres123}
-spring.datasource.driver-class-name=org.postgresql.Driver
+server:
+  port: 8081
 
-# Flyway Configuration
-spring.flyway.enabled=true
-spring.flyway.locations=classpath:db/migration
-spring.flyway.baseline-on-migrate=true
-spring.flyway.validate-on-migrate=true
+accounts:
+  api-key: ${API_KEY:YWJjZGVmZ2hpams7bG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MA==}
+  max-response-time-ms: 200
+  connection-pool-size: 20
+  query-timeout-seconds: 5
 
-# API Key Configuration
-accounts.api-key=${API_KEY:YWJjZGVmZ2hpams7bG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MA==}
+logging:
+  level:
+    com.microservices.accounts: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
-# Performance Configuration
-accounts.max-response-time-ms=200
-accounts.connection-pool-size=20
-accounts.query-timeout-seconds=5
-
-# Logging Configuration
-logging.level.com.microservices.accounts=DEBUG
-logging.level.org.springframework.security=DEBUG
-logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} - %msg%n
-logging.pattern.file=%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
-
-# Management endpoints
-management.endpoints.web.exposure.include=health,info,metrics
-management.endpoint.health.show-details=always
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
