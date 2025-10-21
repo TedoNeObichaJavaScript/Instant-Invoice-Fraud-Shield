@@ -1,16 +1,16 @@
-// Instant Invoice: Fraud Shield - Frontend Application
-class FraudShieldApp {
+// Instant Invoice: Fraud Shield - Supplier Payment Fraud Detection
+class SupplierFraudDetectionApp {
     constructor() {
         this.apiBaseUrl = '/api';
         this.authToken = null;
-        this.assessments = [];
+        this.validations = [];
         this.init();
     }
 
     init() {
         this.setupEventListeners();
         this.checkAuthStatus();
-        this.loadRecentAssessments();
+        this.loadRecentValidations();
     }
 
     setupEventListeners() {
@@ -26,10 +26,10 @@ class FraudShieldApp {
             logoutBtn.addEventListener('click', () => this.handleLogout());
         }
 
-        // Risk assessment form
-        const riskForm = document.getElementById('riskAssessmentForm');
-        if (riskForm) {
-            riskForm.addEventListener('submit', (e) => this.handleRiskAssessment(e));
+        // Payment validation form
+        const validationForm = document.getElementById('paymentValidationForm');
+        if (validationForm) {
+            validationForm.addEventListener('submit', (e) => this.handlePaymentValidation(e));
         }
     }
 
@@ -76,7 +76,7 @@ class FraudShieldApp {
         this.showMessage('Logged out successfully', 'info');
     }
 
-    async handleRiskAssessment(e) {
+    async handlePaymentValidation(e) {
         e.preventDefault();
         
         if (!this.authToken) {
@@ -85,19 +85,21 @@ class FraudShieldApp {
         }
 
         const formData = {
-            iban: document.getElementById('iban').value,
+            supplierIban: document.getElementById('supplierIban').value,
             invoiceId: document.getElementById('invoiceId').value,
-            amount: parseFloat(document.getElementById('amount').value),
+            supplierName: document.getElementById('supplierName').value,
+            paymentAmount: parseFloat(document.getElementById('paymentAmount').value),
             currency: document.getElementById('currency').value,
-            merchantId: document.getElementById('merchantId').value
+            invoiceNumber: document.getElementById('invoiceNumber').value,
+            supplierReference: document.getElementById('supplierReference').value
         };
 
         try {
             this.showLoading(true);
-            const assessBtn = document.getElementById('assessBtn');
-            assessBtn.disabled = true;
+            const validateBtn = document.getElementById('validateBtn');
+            validateBtn.disabled = true;
 
-            const response = await fetch(`${this.apiBaseUrl}/v1/accounts/risk-assessment`, {
+            const response = await fetch(`${this.apiBaseUrl}/v1/suppliers/payment-validation`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -109,80 +111,100 @@ class FraudShieldApp {
             const data = await response.json();
 
             if (response.ok) {
-                this.displayAssessmentResult(data);
-                this.addToRecentAssessments(data);
+                this.displayValidationResult(data);
+                this.addToRecentValidations(data);
                 this.updateStats(data);
                 
                 if (data.acceptableResponseTime) {
-                    this.showMessage('Risk assessment completed successfully!', 'success');
+                    this.showMessage('Payment validation completed successfully!', 'success');
                 } else {
-                    this.showMessage('Risk assessment completed but response time exceeded 200ms', 'info');
+                    this.showMessage('Validation completed but response time exceeded 200ms', 'info');
                 }
             } else {
-                this.showMessage(data.error || 'Risk assessment failed', 'error');
+                this.showMessage(data.error || 'Payment validation failed', 'error');
             }
         } catch (error) {
             this.showMessage('Network error: ' + error.message, 'error');
         } finally {
             this.showLoading(false);
-            const assessBtn = document.getElementById('assessBtn');
-            assessBtn.disabled = false;
+            const validateBtn = document.getElementById('validateBtn');
+            validateBtn.disabled = false;
         }
     }
 
-    displayAssessmentResult(data) {
+    displayValidationResult(data) {
         const resultsDiv = document.getElementById('results');
-        const decisionSpan = document.getElementById('decision');
+        const fraudStatusSpan = document.getElementById('fraudStatus');
         const riskLevelSpan = document.getElementById('riskLevel');
         const invoiceIdSpan = document.getElementById('resultInvoiceId');
-        const reasonSpan = document.getElementById('reason');
+        const supplierNameSpan = document.getElementById('resultSupplierName');
+        const supplierIbanSpan = document.getElementById('resultSupplierIban');
+        const recommendationSpan = document.getElementById('recommendation');
         const responseTimeSpan = document.getElementById('responseTime');
         const timestampSpan = document.getElementById('timestamp');
+        const anomaliesList = document.getElementById('anomaliesList');
 
-        decisionSpan.textContent = data.decision;
-        decisionSpan.className = `decision ${data.decision}`;
+        fraudStatusSpan.textContent = data.fraudStatus;
+        fraudStatusSpan.className = `fraud-status ${data.fraudStatus}`;
         
         riskLevelSpan.textContent = data.riskLevel;
         invoiceIdSpan.textContent = data.invoiceId;
-        reasonSpan.textContent = data.reason;
+        supplierNameSpan.textContent = data.supplierName;
+        supplierIbanSpan.textContent = data.supplierIban;
+        recommendationSpan.textContent = data.recommendation;
         responseTimeSpan.textContent = data.responseTimeMs;
         timestampSpan.textContent = new Date(data.timestamp).toLocaleString();
+
+        // Display anomalies
+        anomaliesList.innerHTML = '';
+        if (data.anomalies && data.anomalies.length > 0) {
+            data.anomalies.forEach(anomaly => {
+                const li = document.createElement('li');
+                li.textContent = anomaly;
+                anomaliesList.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.textContent = 'No anomalies detected';
+            li.className = 'no-anomalies';
+            anomaliesList.appendChild(li);
+        }
 
         resultsDiv.style.display = 'block';
         resultsDiv.scrollIntoView({ behavior: 'smooth' });
     }
 
-    addToRecentAssessments(data) {
-        this.assessments.unshift({
+    addToRecentValidations(data) {
+        this.validations.unshift({
             ...data,
             timestamp: new Date(data.timestamp)
         });
 
-        // Keep only last 10 assessments
-        if (this.assessments.length > 10) {
-            this.assessments = this.assessments.slice(0, 10);
+        // Keep only last 10 validations
+        if (this.validations.length > 10) {
+            this.validations = this.validations.slice(0, 10);
         }
 
-        this.renderRecentAssessments();
+        this.renderRecentValidations();
     }
 
-    renderRecentAssessments() {
+    renderRecentValidations() {
         const recentList = document.getElementById('recentList');
         recentList.innerHTML = '';
 
-        this.assessments.forEach(assessment => {
+        this.validations.forEach(validation => {
             const item = document.createElement('div');
-            item.className = `assessment-item ${assessment.decision}`;
+            item.className = `validation-item ${validation.fraudStatus}`;
             
             item.innerHTML = `
-                <div class="assessment-item-header">
-                    <span class="assessment-item-decision ${assessment.decision}">${assessment.decision}</span>
-                    <span class="assessment-item-time">${assessment.timestamp.toLocaleString()}</span>
+                <div class="validation-item-header">
+                    <span class="validation-item-status ${validation.fraudStatus}">${validation.fraudStatus}</span>
+                    <span class="validation-item-time">${validation.timestamp.toLocaleString()}</span>
                 </div>
-                <div class="assessment-item-details">
-                    <strong>${assessment.invoiceId}</strong> - ${assessment.riskLevel} Risk
+                <div class="validation-item-details">
+                    <strong>${validation.invoiceId}</strong> - ${validation.supplierName}
                     <br>
-                    <small>${assessment.responseTimeMs}ms - ${assessment.reason}</small>
+                    <small>${validation.responseTimeMs}ms - ${validation.recommendation}</small>
                 </div>
             `;
             
@@ -191,23 +213,32 @@ class FraudShieldApp {
     }
 
     updateStats(data) {
-        // Update total assessments
-        const totalElement = document.getElementById('totalAssessments');
+        // Update total payments
+        const totalElement = document.getElementById('totalPayments');
         if (totalElement) {
-            totalElement.textContent = this.assessments.length;
+            totalElement.textContent = this.validations.length;
+        }
+
+        // Calculate fraud detected
+        const fraudCount = this.validations.filter(v => 
+            v.fraudStatus === 'SUSPICIOUS' || v.fraudStatus === 'HIGH_RISK' || v.fraudStatus === 'BLOCKED'
+        ).length;
+        const fraudElement = document.getElementById('fraudDetected');
+        if (fraudElement) {
+            fraudElement.textContent = fraudCount;
         }
 
         // Calculate average response time
-        if (this.assessments.length > 0) {
-            const avgResponseTime = this.assessments.reduce((sum, a) => sum + a.responseTimeMs, 0) / this.assessments.length;
+        if (this.validations.length > 0) {
+            const avgResponseTime = this.validations.reduce((sum, v) => sum + v.responseTimeMs, 0) / this.validations.length;
             const avgElement = document.getElementById('avgResponseTime');
             if (avgElement) {
                 avgElement.textContent = Math.round(avgResponseTime);
             }
 
             // Calculate success rate (acceptable response times)
-            const acceptableCount = this.assessments.filter(a => a.responseTimeMs <= 200).length;
-            const successRate = (acceptableCount / this.assessments.length) * 100;
+            const acceptableCount = this.validations.filter(v => v.responseTimeMs <= 200).length;
+            const successRate = (acceptableCount / this.validations.length) * 100;
             const successElement = document.getElementById('successRate');
             if (successElement) {
                 successElement.textContent = Math.round(successRate);
@@ -294,42 +325,42 @@ class FraudShieldApp {
         }, 5000);
     }
 
-    loadRecentAssessments() {
+    loadRecentValidations() {
         // Load from localStorage if available
-        const saved = localStorage.getItem('recentAssessments');
+        const saved = localStorage.getItem('recentValidations');
         if (saved) {
             try {
-                this.assessments = JSON.parse(saved).map(a => ({
-                    ...a,
-                    timestamp: new Date(a.timestamp)
+                this.validations = JSON.parse(saved).map(v => ({
+                    ...v,
+                    timestamp: new Date(v.timestamp)
                 }));
-                this.renderRecentAssessments();
+                this.renderRecentValidations();
             } catch (error) {
-                console.error('Error loading recent assessments:', error);
+                console.error('Error loading recent validations:', error);
             }
         }
     }
 
-    saveRecentAssessments() {
-        localStorage.setItem('recentAssessments', JSON.stringify(this.assessments));
+    saveRecentValidations() {
+        localStorage.setItem('recentValidations', JSON.stringify(this.validations));
     }
 }
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.fraudShieldApp = new FraudShieldApp();
+    window.supplierFraudApp = new SupplierFraudDetectionApp();
     
-    // Save assessments periodically
+    // Save validations periodically
     setInterval(() => {
-        if (window.fraudShieldApp) {
-            window.fraudShieldApp.saveRecentAssessments();
+        if (window.supplierFraudApp) {
+            window.supplierFraudApp.saveRecentValidations();
         }
     }, 30000); // Every 30 seconds
 });
 
 // Handle page unload
 window.addEventListener('beforeunload', () => {
-    if (window.fraudShieldApp) {
-        window.fraudShieldApp.saveRecentAssessments();
+    if (window.supplierFraudApp) {
+        window.supplierFraudApp.saveRecentValidations();
     }
 });
