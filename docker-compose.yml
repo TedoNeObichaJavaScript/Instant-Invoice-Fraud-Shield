@@ -99,17 +99,17 @@ services:
 
   # JMeter for Stress Testing
   jmeter:
-    image: justb4/jmeter:5.5
+    build:
+      context: ./stress_tests
+      dockerfile: Dockerfile
     container_name: microservices-jmeter
     volumes:
-      - ./stress_tests:/tests
-      - ./stress_tests/results:/results
+      - ./stress_tests/results:/tests/results
     networks:
       - microservices-network
-    command: ["-n", "-t", "/tests/load_test.jmx", "-l", "/results/results.jtl", "-e", "-o", "/results/html-report"]
     depends_on:
-      - api-gateway
-      - accounts-service
+      api-gateway:
+        condition: service_healthy
     profiles:
       - testing  # Only run when explicitly requested
 

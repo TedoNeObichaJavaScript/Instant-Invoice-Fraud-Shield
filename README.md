@@ -197,21 +197,39 @@ Content-Type: application/json
 2. **Validate Payment:** Enter supplier details in the dashboard
 3. **Check Results:** Review fraud detection results and anomalies
 
-### Automated Testing
-```bash
-# Run all tests
-docker compose --profile testing up --build -d
+### Stress Testing with JMeter
 
+#### Quick Start
+```bash
+# Run complete stress testing suite
+docker compose --profile testing up --build jmeter
+
+# Run specific test scenarios
+docker compose --profile testing run jmeter jmeter -n -t /tests/test-plans/normal-load-test.jmx -l /tests/results/normal-load.jtl -e -o /tests/results/normal-load-report
+```
+
+#### Test Scenarios
+- **Normal Load:** 50 users, 10 iterations (500 requests)
+- **Extreme Load:** 200 users, 5 minutes sustained (4000+ requests)
+- **Performance Thresholds:** <200ms response time, >99% success rate
+
+#### View Results
+```bash
 # Check test results
 ls stress_tests/results/
-open stress_tests/results/html-report/index.html
+
+# Open HTML reports
+open stress_tests/results/*/index.html
 ```
+
+For detailed stress testing documentation, see [stress_tests/README.md](stress_tests/README.md).
 
 ### Performance Validation
 - **Load Testing:** 50-100 concurrent users
-- **Stress Testing:** Peak load scenarios
+- **Stress Testing:** Peak load scenarios up to 200 users
 - **Response Time:** <200ms requirement validation
 - **Accuracy Testing:** Fraud detection precision
+- **Throughput:** >50 req/s normal, >100 req/s extreme
 
 ## 📈 Monitoring and Metrics
 

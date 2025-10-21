@@ -1,188 +1,231 @@
-# Stress Tests - Instant Invoice: Fraud Shield
+# Stress Testing - Instant Invoice: Fraud Shield
 
-This directory contains comprehensive stress tests for the supplier payment fraud detection system, designed to validate the <200ms response time requirement.
+This directory contains comprehensive stress testing setup using Apache JMeter for the Instant Invoice: Fraud Shield microservices application.
 
-## Test Scenarios
+## 📁 Directory Structure
 
-### 1. Normal Load Test
-- **Threads:** 50 concurrent users
-- **Duration:** 10 iterations per user
-- **Ramp-up:** 30 seconds
-- **Scenario:** Safe supplier payments with normal amounts
-- **Purpose:** Validate system performance under typical load
-
-### 2. Extreme Load Test
-- **Threads:** 100 concurrent users
-- **Duration:** 20 iterations per user
-- **Ramp-up:** 60 seconds
-- **Scenario:** High-risk supplier payments with suspicious patterns
-- **Purpose:** Test system resilience under peak load
-
-## Test Data
-
-### Safe Payment Pattern
-```json
-{
-  "supplierIban": "BG11BANK99991234567890",
-  "invoiceId": "INV-{random}-{random}",
-  "supplierName": "ABC Supplies Ltd.",
-  "paymentAmount": {random 100-5000},
-  "currency": "EUR",
-  "invoiceNumber": "INV-{random}",
-  "supplierReference": "SUP-{random}"
-}
+```
+stress_tests/
+├── Dockerfile                 # JMeter Docker container
+├── README.md                  # This file
+├── run-stress-tests.sh        # Linux/macOS test runner
+├── run-stress-tests.ps1       # Windows PowerShell test runner
+├── test-plans/                # JMeter test plans
+│   ├── normal-load-test.jmx   # Normal load test (50 users)
+│   └── extreme-load-test.jmx  # Extreme load test (200 users)
+└── results/                   # Test results (created during execution)
+    ├── normal-load-summary.jtl
+    ├── normal-load-graph.jtl
+    ├── extreme-load-summary.jtl
+    └── extreme-load-graph.jtl
 ```
 
-### High-Risk Payment Pattern
-```json
-{
-  "supplierIban": "BG11BANK99991234567890",
-  "invoiceId": "INV-{random}-{random}",
-  "supplierName": "SUSPICIOUS SUPPLIER",
-  "paymentAmount": {random 50000-100000},
-  "currency": "USD",
-  "invoiceNumber": "TEST-{random}",
-  "supplierReference": "RISK-{random}"
-}
-```
+## 🧪 Test Scenarios
 
-## Running Tests
+### Normal Load Test
+- **Users**: 50 concurrent users
+- **Duration**: 10 iterations per user (500 total requests)
+- **Ramp-up**: 60 seconds
+- **Purpose**: Simulate normal production load
+- **Expected Response Time**: < 200ms
+- **Expected Success Rate**: > 99%
 
-### Option 1: Using Docker Compose (Recommended)
+### Extreme Load Test
+- **Users**: 200 concurrent users
+- **Duration**: 5 minutes sustained load
+- **Ramp-up**: 30 seconds
+- **Purpose**: Test system limits and breaking point
+- **Expected Response Time**: < 500ms (under extreme load)
+- **Expected Success Rate**: > 95%
+
+## 🚀 Running Stress Tests
+
+### Prerequisites
+1. Ensure all microservices are running:
+   ```bash
+   docker compose up --build -d
+   ```
+
+2. Wait for all services to be healthy:
+   ```bash
+   docker compose ps
+   ```
+
+### Method 1: Using Docker Compose (Recommended)
+
+Run the complete stress testing suite:
 ```bash
-# Run all services including JMeter
-docker compose --profile testing up --build -d
+# Run all stress tests
+docker compose --profile testing up --build jmeter
 
-# Check results
-ls stress_tests/results/
+# Run only normal load test
+docker compose --profile testing run jmeter jmeter -n -t /tests/test-plans/normal-load-test.jmx -l /tests/results/normal-load.jtl -e -o /tests/results/normal-load-report
+
+# Run only extreme load test
+docker compose --profile testing run jmeter jmeter -n -t /tests/test-plans/extreme-load-test.jmx -l /tests/results/extreme-load.jtl -e -o /tests/results/extreme-load-report
 ```
 
-### Option 2: Using Scripts
+### Method 2: Using Test Scripts
+
+#### Linux/macOS:
 ```bash
-# Linux/Mac
-chmod +x stress_tests/run_stress_tests.sh
-./stress_tests/run_stress_tests.sh
-
-# Windows
-stress_tests\run_stress_tests.bat
+chmod +x run-stress-tests.sh
+./run-stress-tests.sh
 ```
 
-### Option 3: Manual JMeter Execution
+#### Windows PowerShell:
+```powershell
+.\run-stress-tests.ps1
+```
+
+### Method 3: Manual JMeter Execution
+
 ```bash
-# Start services first
-docker compose up --build -d
+# Build JMeter container
+docker build -t fraud-shield-jmeter ./stress_tests
 
-# Run JMeter manually
-docker exec microservices-jmeter jmeter -n -t /tests/load_test.jmx -l /results/results.jtl -e -o /results/html-report
+# Run normal load test
+docker run --rm --network softuniizpit_microservices-network \
+  -v $(pwd)/stress_tests/results:/tests/results \
+  fraud-shield-jmeter \
+  jmeter -n -t /tests/test-plans/normal-load-test.jmx \
+  -l /tests/results/normal-load.jtl \
+  -e -o /tests/results/normal-load-report
+
+# Run extreme load test
+docker run --rm --network softuniizpit_microservices-network \
+  -v $(pwd)/stress_tests/results:/tests/results \
+  fraud-shield-jmeter \
+  jmeter -n -t /tests/test-plans/extreme-load-test.jmx \
+  -l /tests/results/extreme-load.jtl \
+  -e -o /tests/results/extreme-load-report
 ```
 
-## Test Assertions
+## 📊 Understanding Results
 
-### Response Time Requirements
-- ✅ **<200ms response time** for 95% of requests
-- ✅ **<500ms response time** for 99% of requests
-- ✅ **No timeouts** under normal load
+### Output Files
+- **`.jtl` files**: Raw test data (CSV format)
+- **`-report/` directories**: HTML reports with charts and statistics
+- **`.log` files**: JMeter execution logs
 
-### Success Rate Requirements
-- ✅ **>95% success rate** for all requests
-- ✅ **Proper error handling** for invalid requests
-- ✅ **Consistent performance** across all test scenarios
+### Key Metrics to Monitor
 
-### Fraud Detection Accuracy
-- ✅ **Correct fraud status** classification
-- ✅ **Anomaly detection** working properly
-- ✅ **Risk level assessment** accurate
+#### Performance Metrics
+- **Response Time**: Average, 90th percentile, 95th percentile
+- **Throughput**: Requests per second
+- **Error Rate**: Percentage of failed requests
+- **Concurrent Users**: Active users at any given time
 
-## Results Analysis
+#### Business Metrics
+- **Fraud Detection Accuracy**: Valid responses from fraud detection API
+- **Authentication Success**: Successful login rate
+- **API Gateway Performance**: Request routing efficiency
 
-### Key Metrics
-1. **Response Time Distribution**
-   - Average response time
-   - 95th percentile response time
-   - Maximum response time
+### Performance Thresholds
 
-2. **Throughput**
-   - Requests per second
-   - Peak throughput
-   - Sustained throughput
+| Metric | Normal Load | Extreme Load |
+|--------|-------------|--------------|
+| Average Response Time | < 200ms | < 500ms |
+| 95th Percentile | < 300ms | < 800ms |
+| Error Rate | < 1% | < 5% |
+| Throughput | > 50 req/s | > 100 req/s |
 
-3. **Error Rate**
-   - Failed requests percentage
-   - Error types and frequencies
-   - System stability under load
+## 🔧 Customizing Tests
 
-4. **Fraud Detection Performance**
-   - Detection accuracy
-   - False positive rate
-   - Processing time for different risk levels
+### Modifying Test Parameters
 
-### Expected Results
-- **Normal Load:** <100ms average response time
-- **Extreme Load:** <200ms average response time
-- **Success Rate:** >99% for both scenarios
-- **Fraud Detection:** 100% accuracy for test patterns
+Edit the `.jmx` files to adjust:
+- **Number of users**: Change `ThreadGroup.num_threads`
+- **Ramp-up time**: Modify `ThreadGroup.ramp_time`
+- **Test duration**: Adjust `ThreadGroup.duration` or `LoopController.loops`
+- **Request data**: Modify the JSON payload in fraud detection requests
 
-## Troubleshooting
+### Adding New Test Scenarios
+
+1. Create a new `.jmx` file in `test-plans/`
+2. Copy from existing test and modify parameters
+3. Update the test runner scripts to include the new test
+4. Add the new test to docker-compose.yml if needed
+
+## 🐛 Troubleshooting
 
 ### Common Issues
+
 1. **Connection Refused**
-   - Ensure all services are running: `docker compose ps`
-   - Check service health: `docker compose logs`
+   - Ensure API Gateway is running and healthy
+   - Check network connectivity between containers
+   - Verify the API_BASE_URL in test plans
 
-2. **SSL Certificate Errors**
-   - Accept self-signed certificate in browser
-   - Use `-k` flag for curl tests
+2. **Authentication Failures**
+   - Check if admin user exists in database
+   - Verify JWT token extraction is working
+   - Ensure API Gateway is processing login requests
 
-3. **High Response Times**
-   - Check database performance
-   - Monitor system resources
-   - Verify network connectivity
+3. **High Error Rates**
+   - Check system resources (CPU, Memory)
+   - Review application logs for errors
+   - Consider reducing concurrent users
 
-### Debug Commands
+4. **Slow Response Times**
+   - Monitor database performance
+   - Check Redis cache hit rates
+   - Review network latency between services
+
+### Debug Mode
+
+Run JMeter in GUI mode for debugging:
 ```bash
-# Check service status
-docker compose ps
-
-# View logs
-docker compose logs api-gateway
-docker compose logs accounts-service
-
-# Monitor resources
-docker stats
-
-# Test individual endpoints
-curl -k -X POST https://localhost/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+docker run -it --rm --network softuniizpit_microservices-network \
+  -v $(pwd)/stress_tests:/tests \
+  fraud-shield-jmeter \
+  jmeter -t /tests/test-plans/normal-load-test.jmx
 ```
 
-## Performance Tuning
+## 📈 Performance Optimization
 
-### Database Optimization
-- Ensure proper indexing on IBAN lookup table
-- Monitor query execution times
-- Consider connection pooling settings
+### Based on Test Results
 
-### Application Tuning
-- Adjust JVM heap size
-- Optimize database queries
-- Enable response caching where appropriate
+1. **If response times are high**:
+   - Optimize database queries
+   - Increase Redis cache size
+   - Add database indexes
+   - Scale horizontally
 
-### Infrastructure Tuning
-- Increase container resources if needed
-- Optimize network configuration
-- Consider load balancing for production
+2. **If error rates are high**:
+   - Increase connection pool sizes
+   - Add circuit breakers
+   - Implement retry logic
+   - Scale services
 
-## Reports
+3. **If throughput is low**:
+   - Optimize JVM settings
+   - Use connection pooling
+   - Implement caching strategies
+   - Consider async processing
 
-After test completion, detailed reports are available in:
-- **HTML Report:** `stress_tests/results/html-report/index.html`
-- **Raw Data:** `stress_tests/results/results.jtl`
-- **Logs:** Docker container logs
+## 📝 Reporting
 
-The HTML report includes:
-- Response time graphs
-- Throughput analysis
-- Error rate trends
-- Performance statistics
-- Detailed request/response data
+### Automated Reports
+- HTML reports are generated automatically
+- Include charts, statistics, and error analysis
+- Saved in `results/` directory with timestamps
+
+### Manual Analysis
+- Use JMeter GUI to analyze `.jtl` files
+- Export data to Excel for further analysis
+- Create custom dashboards using the raw data
+
+## 🔒 Security Considerations
+
+- Tests use the same authentication as production
+- No sensitive data is logged in test results
+- Test data is generated dynamically
+- Results are stored locally only
+
+## 📞 Support
+
+For issues with stress testing:
+1. Check the troubleshooting section above
+2. Review JMeter logs in `results/` directory
+3. Check application logs: `docker compose logs`
+4. Verify system resources: `docker stats`
