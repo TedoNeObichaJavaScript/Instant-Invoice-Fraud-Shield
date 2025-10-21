@@ -66,7 +66,13 @@ public class JwtService {
 
     public boolean validateToken(String token) {
         try {
-            // First check Redis cache
+            // First validate JWT signature and expiration
+            Claims claims = getClaimsFromToken(token);
+            if (claims.getExpiration().before(new Date())) {
+                return false; // Token expired
+            }
+
+            // Check Redis cache
             if (isTokenInRedis(token)) {
                 return true;
             }
@@ -74,7 +80,6 @@ public class JwtService {
             // Check database
             if (isTokenInDatabase(token)) {
                 // Refresh Redis cache
-                Claims claims = getClaimsFromToken(token);
                 UUID userId = UUID.fromString(claims.getSubject());
                 storeTokenInRedis(token, userId, jwtExpiration);
                 return true;
@@ -88,7 +93,7 @@ public class JwtService {
 
     public Claims getClaimsFromToken(String token) {
         return Jwts.parser()
-                .setSigningKey(secretKey)
+                .verifyWith(secretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -126,12 +131,8 @@ public class JwtService {
 
     public String extractUsername(String token) {
         try {
-            return Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody()
-                    .getSubject();
+            Claims claims = getClaimsFromToken(token);
+            return claims.getSubject();
         } catch (Exception e) {
             return null;
         }

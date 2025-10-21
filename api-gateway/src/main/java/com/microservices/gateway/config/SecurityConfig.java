@@ -29,6 +29,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+        System.out.println("SecurityConfig: Configuring security filter chain with JWT filter: " + jwtAuthenticationFilter.getClass().getSimpleName());
+        
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
