@@ -391,22 +391,29 @@ body {
     margin-top: 0.25rem;
 }
 
+.button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
 #validateBtn {
-    width: 100%;
-    padding: 1rem;
+    width: auto;
+    min-width: 200px;
+    max-width: 300px;
+    padding: 0.75rem 1.5rem;
     background: linear-gradient(135deg, var(--primary-600) 0%, #7c3aed 100%);
     color: white;
     border: none;
     border-radius: 0.5rem;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    margin-top: 1rem;
 }
 
 #validateBtn:hover {
