@@ -17,6 +17,8 @@ class PaymentFraudDetectionApp {
         this.statsUpdated = false; // Flag to prevent duplicate stat updates
         this.validationInProgress = false; // Flag to prevent duplicate validations
         this.reviewModalClicked = false; // Flag to prevent double-clicks on review modal
+        this.blockedDetailsShown = false; // Flag to prevent duplicate blocked payment details
+        this.autoDetectionProcessed = false; // Flag to prevent duplicate auto-detection processing
         this.init();
     }
 
@@ -188,6 +190,21 @@ class PaymentFraudDetectionApp {
         try {
             // Reset stats update flag for new payment
             this.statsUpdated = false;
+            
+            // Reset blocked details flag for new payment
+            this.blockedDetailsShown = false;
+            
+            // Reset auto-detection processing flag for new payment
+            this.autoDetectionProcessed = false;
+            
+            // Clear any existing blocked payment details from previous results
+            const resultsDiv = document.getElementById('results');
+            if (resultsDiv) {
+                const existingBlockedDetails = resultsDiv.querySelector('.blocked-details');
+                if (existingBlockedDetails) {
+                    existingBlockedDetails.remove();
+                }
+            }
             
             // Show loading state
             this.showMessage('Generating payment...', 'info');
@@ -616,6 +633,15 @@ class PaymentFraudDetectionApp {
     }
 
     handleAutoDetection(riskStatus, riskLevel, result) {
+        // Prevent duplicate auto-detection processing
+        if (this.autoDetectionProcessed) {
+            console.log('Auto-detection already processed for this payment, skipping duplicate');
+            return;
+        }
+        
+        // Mark as processed to prevent duplicates
+        this.autoDetectionProcessed = true;
+        
         // Auto-detection logic based on risk level
         switch (riskStatus) {
             case 'ALLOW':
@@ -837,6 +863,26 @@ class PaymentFraudDetectionApp {
     }
 
     showBlockedPaymentDetails(result) {
+        // Prevent duplicate blocked payment details using flag
+        if (this.blockedDetailsShown) {
+            console.log('Blocked payment details already shown for this payment, skipping duplicate');
+            return;
+        }
+        
+        // Mark as shown to prevent duplicates
+        this.blockedDetailsShown = true;
+        
+        // Prevent duplicate blocked payment details
+        const resultsDiv = document.getElementById('results');
+        if (!resultsDiv) return;
+        
+        // Check if blocked details already exist for this payment
+        const existingBlockedDetails = resultsDiv.querySelector('.blocked-details');
+        if (existingBlockedDetails) {
+            console.log('Blocked payment details already exist, skipping duplicate');
+            return;
+        }
+        
         // Show additional details for blocked payments
         const blockedDetails = document.createElement('div');
         blockedDetails.className = 'blocked-details';
@@ -850,10 +896,7 @@ class PaymentFraudDetectionApp {
         `;
         
         // Add to results section
-        const resultsDiv = document.getElementById('results');
-        if (resultsDiv) {
-            resultsDiv.appendChild(blockedDetails);
-        }
+        resultsDiv.appendChild(blockedDetails);
     }
 
     enableButtons(buttonIds) {
