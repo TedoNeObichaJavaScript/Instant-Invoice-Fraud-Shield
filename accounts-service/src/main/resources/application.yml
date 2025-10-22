@@ -38,5 +38,8 @@ management:
   endpoint:
     health:
       show-details: always
+      enabled: true
   security:
     enabled: false
+  server:
+    port: 8081
