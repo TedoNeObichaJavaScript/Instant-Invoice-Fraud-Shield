@@ -1775,9 +1775,11 @@ body:not(:has(.dashboard)) .footer {
 }
 
 .disabled {
-    opacity: 0.5;
+    opacity: 0.8;
     cursor: not-allowed;
     transform: none !important;
+    background-color: #6b7280 !important;
+    color: #ffffff !important;
 }
 
 .button-container {

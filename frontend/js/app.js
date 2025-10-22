@@ -187,20 +187,21 @@ class PaymentFraudDetectionApp {
     async generatePayment() {
         try {
             // Show loading state
-            this.showMessage('Generating payment and performing fraud check...', 'info');
+            this.showMessage('Generating payment...', 'info');
             
-            // Get random IBANs from database
-            const ibans = await this.getRandomIBANsFromDatabase(2);
+            // Get random IBANs with risk data from database
+            const ibanData = await this.getRandomIBANsWithRiskFromDatabase(2);
             
             this.currentPayment = {
                 invoiceId: `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
                 amount: parseFloat((Math.random() * 50000 + 100).toFixed(2)),
-                supplierIban: ibans[0],
+                supplierIban: ibanData[0].iban,
                 supplierName: this.generateRandomSupplierName(),
                 supplierCountry: 'Bulgaria',
                 paymentPurpose: this.generateRandomPurpose(),
-                riskLevel: 'UNKNOWN', // Will be determined by fraud check
-                generatedAt: new Date().toISOString()
+                riskLevel: ibanData[0].riskLevel, // Get actual risk level from database
+                generatedAt: new Date().toISOString(),
+                fraudCheckUsed: false // Track if fraud check has been used
             };
 
             this.displayGeneratedPayment();
@@ -208,6 +209,8 @@ class PaymentFraudDetectionApp {
             
             // Automatically perform fraud check after generation
             await this.performFraudCheck();
+            
+            this.showMessage('Payment generated and fraud checked automatically!', 'success');
             
         } catch (error) {
             console.error('Error generating payment:', error);
@@ -226,7 +229,8 @@ class PaymentFraudDetectionApp {
                 supplierCountry: 'Bulgaria',
                 paymentPurpose: this.generateRandomPurpose(),
                 riskLevel: randomRisk,
-                generatedAt: new Date().toISOString()
+                generatedAt: new Date().toISOString(),
+                fraudCheckUsed: false // Track if fraud check has been used
             };
 
             this.displayGeneratedPayment();
@@ -259,6 +263,44 @@ class PaymentFraudDetectionApp {
             console.error('Error fetching IBANs from database:', error);
             // Fallback to random generation
             return this.generateRandomIBANs(count);
+        }
+    }
+
+    async getRandomIBANsWithRiskFromDatabase(count) {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/v1/fraud-detection/ibans/random?count=${count}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                    // Removed Authorization header for testing
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Received IBANs with risk data from database:', data);
+                
+                // If the API returns both IBAN and risk level, use it
+                if (data.ibans && data.riskLevels) {
+                    return data.ibans.map((iban, index) => ({
+                        iban: iban,
+                        riskLevel: data.riskLevels[index] || 'GOOD'
+                    }));
+                }
+                
+                // If only IBANs are returned, we need to fetch risk levels separately
+                // For now, return with default risk levels
+                return data.ibans.map(iban => ({
+                    iban: iban,
+                    riskLevel: 'GOOD' // Default to GOOD, will be determined by fraud check
+                }));
+            } else {
+                console.error('Failed to fetch IBANs with risk data from database:', response.status);
+                return [];
+            }
+        } catch (error) {
+            console.error('Error fetching IBANs with risk data from database:', error);
+            return [];
         }
     }
 
@@ -391,6 +433,12 @@ class PaymentFraudDetectionApp {
             return;
         }
 
+        // Check if fraud check has already been used for this payment
+        if (this.currentPayment.fraudCheckUsed) {
+            this.showMessage('Fraud check already performed for this payment. Generate a new payment to check again.', 'warning');
+            return;
+        }
+
         try {
             const startTime = Date.now();
             
@@ -410,14 +458,23 @@ class PaymentFraudDetectionApp {
             
             if (response.ok) {
                 const result = await response.json();
+                
+                // Mark fraud check as used
+                this.currentPayment.fraudCheckUsed = true;
+                
+                // Disable the fraud check button
+                const fraudCheckBtn = document.getElementById('fraudCheckBtn');
+                if (fraudCheckBtn) {
+                    fraudCheckBtn.disabled = true;
+                    fraudCheckBtn.classList.add('disabled');
+                    fraudCheckBtn.textContent = 'Fraud Checked';
+                }
+                
                 this.displayFraudResults(result, responseTime);
                 
-                // Show success message with timing
-                if (responseTime < 200) {
-                    this.showMessage(`Fraud check completed in ${responseTime}ms - Excellent performance!`, 'success');
-                } else {
-                    this.showMessage(`Fraud check completed in ${responseTime}ms`, 'info');
-                }
+                // Show the appropriate message based on result
+                this.handleAutoDetection(result.riskStatus, result.riskLevel, result);
+                
                 this.updateStats(responseTime, true, result.riskStatus);
                 
                 // Update IBAN status display based on fraud check result
@@ -552,7 +609,6 @@ class PaymentFraudDetectionApp {
         this.handleAutoDetection(riskStatus, riskLevel, result);
         
         resultsDiv.style.display = 'block';
-        this.showMessage(`Fraud analysis completed in ${responseTime}ms`, 'success');
     }
 
     handleAutoDetection(riskStatus, riskLevel, result) {
@@ -599,8 +655,8 @@ class PaymentFraudDetectionApp {
                     <p><strong>Reason:</strong> ${result.reason || 'Medium risk detected'}</p>
                 </div>
                 <div class="review-actions">
-                    <button class="btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">Approve</button>
-                    <button class="btn-danger" onclick="this.parentElement.parentElement.parentElement.remove()">Reject</button>
+                    <button id="approveBtn" class="btn-primary">Approve</button>
+                    <button id="rejectBtn" class="btn-danger">Reject</button>
                 </div>
             </div>
         `;
@@ -635,6 +691,83 @@ class PaymentFraudDetectionApp {
         `;
         document.head.appendChild(style);
         document.body.appendChild(reviewModal);
+        
+        // Use event delegation to handle button clicks
+        reviewModal.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (e.target.id === 'approveBtn') {
+                console.log('Approve button clicked');
+                this.showMessage('Payment approved after manual review - Status: GOOD', 'success');
+                this.updateStats(0, true, 'ALLOW');
+                this.updateIbanStatusDisplay('GOOD', 'ALLOW');
+                
+                // Update the fraud analysis results display
+                const riskStatusElement = document.getElementById('riskStatus');
+                const riskLevelElement = document.getElementById('riskLevel');
+                if (riskStatusElement) riskStatusElement.textContent = 'ALLOWED';
+                if (riskLevelElement) riskLevelElement.textContent = 'GOOD';
+                if (riskStatusElement) riskStatusElement.className = 'fraud-status allow';
+                
+                // Save to recent validations
+                this.saveValidation({
+                    ...this.currentPayment,
+                    result: {
+                        riskStatus: 'ALLOW',
+                        riskLevel: 'GOOD',
+                        reason: 'Approved after manual review',
+                        anomalies: ['Manual review completed']
+                    },
+                    responseTime: 0,
+                    timestamp: new Date().toISOString(),
+                    validationType: 'manual_review'
+                });
+                
+                this.loadRecentValidations();
+                
+                // Remove modal and style
+                reviewModal.remove();
+                if (style && style.parentNode) {
+                    style.remove();
+                }
+                
+            } else if (e.target.id === 'rejectBtn') {
+                console.log('Reject button clicked');
+                this.showMessage('Payment rejected after manual review - Status: BLOCK', 'error');
+                this.updateStats(0, false, 'BLOCK');
+                this.updateIbanStatusDisplay('BLOCK', 'BLOCK');
+                
+                // Update the fraud analysis results display
+                const riskStatusElement = document.getElementById('riskStatus');
+                const riskLevelElement = document.getElementById('riskLevel');
+                if (riskStatusElement) riskStatusElement.textContent = 'BLOCKED';
+                if (riskLevelElement) riskLevelElement.textContent = 'BLOCK';
+                if (riskStatusElement) riskStatusElement.className = 'fraud-status block';
+                
+                // Save to recent validations
+                this.saveValidation({
+                    ...this.currentPayment,
+                    result: {
+                        riskStatus: 'BLOCK',
+                        riskLevel: 'BLOCK',
+                        reason: 'Rejected after manual review',
+                        anomalies: ['Manual review completed']
+                    },
+                    responseTime: 0,
+                    timestamp: new Date().toISOString(),
+                    validationType: 'manual_review'
+                });
+                
+                this.loadRecentValidations();
+                
+                // Remove modal and style
+                reviewModal.remove();
+                if (style && style.parentNode) {
+                    style.remove();
+                }
+            }
+        });
     }
 
     showBlockedPaymentDetails(result) {
@@ -674,6 +807,10 @@ class PaymentFraudDetectionApp {
             if (btn) {
                 btn.disabled = true;
                 btn.classList.add('disabled');
+                // Reset fraud check button text
+                if (id === 'fraudCheckBtn') {
+                    btn.textContent = 'Mark as Fraud';
+                }
             }
         });
     }
@@ -862,51 +999,68 @@ class PaymentFraudDetectionApp {
     }
 
     showMessage(message, type = 'info') {
-        // Create unique message ID to prevent duplicates
-        const messageId = `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Only show messages for payment-related actions (limit to last 3)
+        // Only show messages for payment-related actions
         const paymentActions = ['Payment accepted', 'Payment blocked', 'Payment processed', 'Fraud check completed', 'Payment generated'];
         const isPaymentAction = paymentActions.some(action => message.includes(action));
         
-        if (isPaymentAction) {
-            // Add to message queue with unique ID
-            this.messageQueue.push({ 
-                id: messageId,
-                message, 
-                type, 
-                timestamp: Date.now() 
-            });
-            
-            // Keep only last 3 payment messages
-            if (this.messageQueue.length > 3) {
-                this.messageQueue.shift();
-            }
-            
-            // Clear old messages
-            this.clearOldMessages();
+        if (!isPaymentAction) {
+            return; // Don't show non-payment messages
         }
         
-        // Remove any existing message elements
-        const existingMessages = document.querySelectorAll('.message');
-        existingMessages.forEach(msg => msg.remove());
+        // Clear any existing message immediately
+        const existingMessage = document.getElementById('single-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
         
-        // Create new message element with unique ID
+        // Create single message element
         const messageDiv = document.createElement('div');
-        messageDiv.id = `message-${messageId}`;
+        messageDiv.id = 'single-message';
         messageDiv.className = `message message-${type}`;
         messageDiv.textContent = message;
         messageDiv.style.display = 'block';
+        messageDiv.style.position = 'fixed';
+        messageDiv.style.top = '20px';
+        messageDiv.style.right = '20px';
+        messageDiv.style.zIndex = '9999';
+        messageDiv.style.padding = '12px 20px';
+        messageDiv.style.borderRadius = '8px';
+        messageDiv.style.color = 'white';
+        messageDiv.style.fontWeight = 'bold';
+        messageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        messageDiv.style.maxWidth = '400px';
+        messageDiv.style.wordWrap = 'break-word';
+        
+        // Set background color based on type
+        switch(type) {
+            case 'success':
+                messageDiv.style.backgroundColor = '#10b981';
+                break;
+            case 'error':
+                messageDiv.style.backgroundColor = '#ef4444';
+                break;
+            case 'warning':
+                messageDiv.style.backgroundColor = '#f59e0b';
+                break;
+            default:
+                messageDiv.style.backgroundColor = '#3b82f6';
+        }
+        
         document.body.appendChild(messageDiv);
         
-        // Auto-hide after 3 seconds
+        // Auto-hide after 4 seconds
         setTimeout(() => {
-            const msgElement = document.getElementById(`message-${messageId}`);
+            const msgElement = document.getElementById('single-message');
             if (msgElement) {
-                msgElement.style.display = 'none';
-                msgElement.remove();
+                msgElement.style.opacity = '0';
+                msgElement.style.transition = 'opacity 0.5s ease-out';
+                setTimeout(() => {
+                    if (msgElement.parentNode) {
+                        msgElement.remove();
+                    }
+                }, 500);
             }
-        }, 3000);
+        }, 4000);
     }
     
     clearOldMessages() {
