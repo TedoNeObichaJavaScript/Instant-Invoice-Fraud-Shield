@@ -1,337 +1,484 @@
-# Instant Invoice: Fraud Shield - FinLab Challenge
+# Instant Invoice: Fraud Shield 🛡️
 
-🛡️ **A fully containerized microservices solution for preventing invoice fraud through supplier payment validation**
+**FinLab Challenge - Advanced Payment Fraud Detection System**
 
-## Overview
+A fully containerized microservices solution for real-time payment fraud detection using advanced risk assessment algorithms and machine learning patterns.
 
-**Instant Invoice: Fraud Shield** is a secure API that checks outgoing payments to suppliers against a crowdsourced database of "risky IBANs" and marks anomalies in ≤ 200ms. Built for the FinLab challenge with a focus on preventing invoice fraud through real-time supplier payment validation.
+## 📋 Table of Contents
 
-## 🏗️ Architecture
+- [Objective](#objective)
+- [Architecture Overview](#architecture-overview)
+- [Functional Requirements](#functional-requirements)
+- [Technology Stack](#technology-stack)
+- [Quick Start](#quick-start)
+- [API Documentation](#api-documentation)
+- [Database Schema](#database-schema)
+- [Risk Assessment System](#risk-assessment-system)
+- [Stress Testing](#stress-testing)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
-### Microservices Components
+## 🎯 Objective
 
-1. **Frontend + Nginx Reverse Proxy** (`frontend/`)
-   - Modern HTML/CSS/JS dashboard for supplier payment validation
-   - Nginx with TLS/SSL, HTTP/2, gzip compression
-   - Self-signed certificates for development
-   - Ports: 80 (HTTP redirect), 443 (HTTPS)
+Create a fully containerized solution consisting of:
+- **Front-end & Reverse Proxy** (HTML + CSS + JavaScript + Nginx in container)
+- **API Gateway** (Java 21 in container)
+- **Cache Service** (Redis in container)
+- **Accounts Microservice** (Java 21 in container)
+- **Database** (PostgreSQL in container)
 
-2. **API Gateway** (`api-gateway/`)
-   - Spring Boot 3.2 with Java 21
-   - JWT authentication and validation
-   - Request forwarding to microservices
-   - Redis caching for JWT tokens
-   - Audit logging for all requests
+## 🏗️ Architecture Overview
 
-3. **Accounts Microservice** (`accounts-service/`)
-   - Supplier payment fraud detection
-   - IBAN risk assessment against crowdsourced database
-   - Anomaly detection in payment patterns
-   - <200ms response time guarantee
-   - X-API-KEY authentication
+```mermaid
+graph TB
+    User[👤 User] --> Nginx[🌐 Nginx Frontend<br/>Port 443 HTTPS]
+    Nginx --> Gateway[🚪 API Gateway<br/>Port 8080]
+    Gateway --> Redis[💾 Redis Cache<br/>Port 6379]
+    Gateway --> Accounts[🏦 Accounts Service<br/>Port 8081]
+    Accounts --> Postgres[🗄️ PostgreSQL<br/>Port 5432]
+    
+    subgraph "Docker Network"
+        Gateway
+        Redis
+        Accounts
+        Postgres
+    end
+    
+    subgraph "External Access"
+        User
+        Nginx
+    end
+```
 
-4. **PostgreSQL Database** (`database/`)
-   - 1 million randomly generated valid Bulgarian IBANs
-   - Risk level classification (ALLOW/REVIEW/BLOCK)
-   - Stored procedures for fast risk assessment
-   - Flyway migrations for schema management
+## ⚙️ Functional Requirements
 
-5. **Redis Cache** (`redis/`)
-   - JWT token storage and validation
-   - Session management
-   - High-performance caching
+### Front-end & Reverse Proxy
+- **Nginx container** with HTTP/2, gzip compression, and self-signed TLS on port 443
+- Serves static content and proxies API requests to the Gateway
+- Real-time fraud detection dashboard with interactive payment validation
+- Responsive design with modern UI/UX
 
-6. **JMeter Stress Tests** (`stress_tests/`)
-   - Normal load: 50 concurrent users
-   - Extreme load: 100 concurrent users
-   - <200ms response time validation
-   - HTML reports and performance metrics
+### API Gateway
+- **Spring MVC (Java 21)** container handling authentication and routing
+- JWT validation and token management
+- Audit logging for all transactions
+- Forwards `/api/v1/**` requests with X-API-KEY for internal microservice authentication
+- Rate limiting and security headers
+
+### Cache Service
+- **Redis container** storing JWT tokens with TTL management
+- Session management and token validation
+- High-performance caching for risk assessment data
+
+### Accounts Microservice
+- **Spring MVC (Java 21)** container for payment risk analysis
+- Validates X-API-KEY and performs comprehensive fraud detection
+- **Target latency: <200ms** for risk assessment decisions
+- Advanced IBAN validation using MOD-97-10 algorithm
+- Risk scoring system (0-100) with categorical classification
+
+### Database
+- **PostgreSQL container** with Flyway migration management
+- Auto-run schema and seed scripts
+- **1 million valid IBAN records** with Bulgarian format: `BG11BANK99991234567890`
+- Risk lookup tables with comprehensive fraud patterns
+- Performance-optimized indexes for sub-200ms response times
+
+## 🛠️ Technology Stack
+
+### Backend
+- **Java 21** with Spring Boot 3.x
+- **Maven** for dependency management
+- **JdbcTemplate** for database operations (no JPA/Hibernate)
+- **Spring MVC** for RESTful APIs
+- **JWT** for stateless authentication
+- **Redis** for caching and session management
+
+### Frontend
+- **HTML5** with semantic markup
+- **CSS3** with modern styling and animations
+- **Vanilla JavaScript (ES6+)** for dynamic interactions
+- **Nginx** as reverse proxy and static file server
+
+### Database
+- **PostgreSQL 15** with advanced indexing
+- **Flyway** for database migrations
+- **Stored Procedures** for complex risk calculations
+- **Custom SQL functions** for IBAN generation and validation
+
+### Infrastructure
+- **Docker & Docker Compose** for containerization
+- **Multi-stage builds** for optimized container images
+- **Internal Docker network** for secure communication
+- **Apache JMeter** for stress testing and performance validation
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose installed
-- Java 21 (for local development)
-- Maven 3.9+ (for local development)
+- Docker and Docker Compose
+- Git
 
-### 1. Clone and Setup
+### Installation
+
+1. **Clone the repository**
 ```bash
 git clone https://github.com/TedoNeObichaJavaScript/Instant-Invoice-Fraud-Shield.git
 cd Instant-Invoice-Fraud-Shield
 ```
 
-### 2. Start All Services
+2. **Start the application**
 ```bash
-# Start all microservices
-docker compose up --build -d
-
-# Check service status
-docker compose ps
-
-# View logs
-docker compose logs -f
+docker-compose up --build -d
 ```
 
-### 3. Access the Application
-- **Frontend Dashboard:** https://localhost (accept self-signed certificate)
-- **API Gateway:** https://localhost/api
-- **Health Check:** https://localhost/health
+3. **Access the application**
+- **Frontend:** https://localhost (accept self-signed certificate)
+- **API Gateway:** http://localhost:8080
+- **Database:** localhost:5432 (user: `postgres`, password: `password`)
 
-### 4. Run Stress Tests
+### Verification
+
+Check if all services are running:
 ```bash
-# Run comprehensive stress tests
-docker compose --profile testing up --build -d
-
-# Or use the provided scripts
-./stress_tests/run_stress_tests.sh  # Linux/Mac
-stress_tests\run_stress_tests.bat   # Windows
+docker-compose ps
 ```
 
-## 🔧 Configuration
-
-### Environment Variables
-Create a `.env` file for custom configuration:
-
-```env
-# Database Configuration
-POSTGRES_DB=microservices_db
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres123
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-
-# API Key for internal communication
-API_KEY=YWJjZGVmZ2hpams7bG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MA==
-
-# Redis Configuration
-REDIS_HOST=redis
-REDIS_PORT=6379
+Expected output:
+```
+NAME                        STATUS
+microservices-frontend      Up (healthy)
+microservices-api-gateway   Up (healthy)
+microservices-accounts      Up (healthy)
+microservices-postgres      Up (healthy)
+microservices-redis         Up (healthy)
 ```
 
-### Service Ports
-- **Frontend (Nginx):** 80, 443
-- **API Gateway:** 8080 (internal)
-- **Accounts Service:** 8081 (internal)
-- **PostgreSQL:** 5432 (internal)
-- **Redis:** 6379 (internal)
+## 📚 API Documentation
 
-## 📊 API Endpoints
+### Authentication Endpoints
 
-### Authentication
+#### Login
 ```http
 POST /api/auth/login
 Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "admin123"
+  "password": "password"
 }
 ```
 
-### Supplier Payment Validation
+#### Logout
 ```http
-POST /api/v1/suppliers/payment-validation
-Authorization: Bearer <jwt_token>
+POST /api/auth/logout
+Authorization: Bearer <JWT_TOKEN>
+```
+
+### Fraud Detection Endpoints
+
+#### Validate Payment
+```http
+POST /api/v1/fraud-detection/validate-payment
+Authorization: Bearer <JWT_TOKEN>
 Content-Type: application/json
 
 {
-  "supplierIban": "BG11BANK99991234567890",
-  "invoiceId": "INV-2025-001",
-  "supplierName": "ABC Supplies Ltd.",
-  "paymentAmount": 1000.00,
-  "currency": "EUR",
-  "invoiceNumber": "INV-2025-001",
-  "supplierReference": "SUP-001"
+  "supplierName": "Test Supplier",
+  "iban": "BG19BANK0000100000",
+  "amount": 1000.00,
+  "currency": "BGN",
+  "description": "Payment for services"
 }
+```
+
+#### Get Random IBANs
+```http
+GET /api/v1/fraud-detection/ibans/random?count=5
+Authorization: Bearer <JWT_TOKEN>
 ```
 
 ### Response Format
+
+#### Success Response
 ```json
 {
-  "invoiceId": "INV-2025-001",
-  "supplierIban": "BG11BANK99991234567890",
-  "supplierName": "ABC Supplies Ltd.",
-  "fraudStatus": "SAFE",
-  "riskLevel": "LOW",
-  "anomalies": ["No anomalies detected"],
-  "recommendation": "APPROVE",
-  "responseTimeMs": 150,
-  "acceptableResponseTime": true,
-  "timestamp": "2025-01-21T10:30:00Z"
+  "valid": true,
+  "riskStatus": "ALLOW",
+  "riskLevel": "GOOD",
+  "riskScore": 15,
+  "reason": "Payment appears valid",
+  "requiresManualReview": false,
+  "responseTime": 45
 }
 ```
 
-## 🛡️ Fraud Detection Logic
+#### Risk Assessment Levels
+- **GOOD** (0-33): Low risk, automatic approval
+- **REVIEW** (34-66): Medium risk, requires manual review
+- **BLOCK** (67-100): High risk, automatic rejection
 
-### Risk Assessment Criteria
-1. **IBAN Risk Level** (from crowdsourced database)
-   - `ALLOW`: Low risk, approved suppliers
-   - `REVIEW`: Medium risk, requires manual review
-   - `BLOCK`: High risk, blocked suppliers
+## 🗄️ Database Schema
 
-2. **Payment Amount Analysis**
-   - Unusually high amounts (>50,000)
-   - Suspiciously low amounts (<1.00)
-   - Currency validation
+### Core Tables
 
-3. **Supplier Pattern Analysis**
-   - Suspicious supplier names (test, dummy)
-   - Invoice number patterns
-   - Reference validation
-
-4. **Anomaly Detection**
-   - Multiple risk factors
-   - Pattern recognition
-   - Historical analysis
-
-### Response Time Guarantee
-- **Target:** <200ms for 95% of requests
-- **Maximum:** <500ms for 99% of requests
-- **Monitoring:** Real-time performance tracking
-
-## 🧪 Testing
-
-### Manual Testing
-1. **Login:** Use `admin`/`admin123` credentials
-2. **Validate Payment:** Enter supplier details in the dashboard
-3. **Check Results:** Review fraud detection results and anomalies
-
-### Stress Testing with JMeter
-
-#### Quick Start
-```bash
-# Run complete stress testing suite
-docker compose --profile testing up --build jmeter
-
-# Run specific test scenarios
-docker compose --profile testing run jmeter jmeter -n -t /tests/test-plans/normal-load-test.jmx -l /tests/results/normal-load.jtl -e -o /tests/results/normal-load-report
+#### Users
+```sql
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
-#### Test Scenarios
-- **Normal Load:** 50 users, 10 iterations (500 requests)
-- **Extreme Load:** 200 users, 5 minutes sustained (4000+ requests)
-- **Performance Thresholds:** <200ms response time, >99% success rate
-
-#### View Results
-```bash
-# Check test results
-ls stress_tests/results/
-
-# Open HTML reports
-open stress_tests/results/*/index.html
+#### IBAN Risk Lookup
+```sql
+CREATE TABLE risk.iban_risk_lookup (
+    id BIGSERIAL PRIMARY KEY,
+    iban VARCHAR(34) UNIQUE NOT NULL,
+    risk_level VARCHAR(10) NOT NULL CHECK (risk_level IN ('GOOD', 'REVIEW', 'BLOCK')),
+    risk_score INTEGER NOT NULL CHECK (risk_score >= 0 AND risk_score <= 100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
-For detailed stress testing documentation, see [stress_tests/README.md](stress_tests/README.md).
+#### Audit Logs
+```sql
+CREATE TABLE audit_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT,
+    action VARCHAR(100) NOT NULL,
+    resource_type VARCHAR(50),
+    resource_id VARCHAR(100),
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-### Performance Validation
-- **Load Testing:** 50-100 concurrent users
-- **Stress Testing:** Peak load scenarios up to 200 users
-- **Response Time:** <200ms requirement validation
-- **Accuracy Testing:** Fraud detection precision
-- **Throughput:** >50 req/s normal, >100 req/s extreme
+### Database Functions
 
-## 📈 Monitoring and Metrics
+#### IBAN Validation (MOD-97-10)
+```sql
+CREATE OR REPLACE FUNCTION is_valid_iban(iban_text TEXT)
+RETURNS BOOLEAN AS $$
+-- Implementation of ISO 13616 MOD-97-10 algorithm
+$$;
+```
 
-### Key Performance Indicators
-- **Response Time:** Average, 95th percentile, maximum
-- **Throughput:** Requests per second
-- **Success Rate:** Percentage of successful validations
-- **Fraud Detection Accuracy:** True positive/negative rates
+#### Risk Data Generation
+```sql
+CREATE OR REPLACE FUNCTION generate_risk_data()
+RETURNS TABLE(risk_level VARCHAR, risk_score INTEGER) AS $$
+-- Generates risk data with 33% distribution
+$$;
+```
 
-### Health Checks
-- **API Gateway:** `/api/health`
-- **Accounts Service:** `/api/v1/suppliers/health`
-- **Database:** Connection and query performance
-- **Redis:** Cache hit rates and response times
+## 🎯 Risk Assessment System
 
-## 🔒 Security Features
+### Risk Scoring Algorithm
+
+Our system uses a comprehensive risk assessment approach:
+
+1. **Database Lookup** (Primary): Direct IBAN risk level from database
+2. **Pattern Analysis**: Suspicious patterns in IBAN, amount, or supplier data
+3. **Historical Analysis**: Previous transactions and supplier behavior
+4. **Amount Analysis**: Unusual payment amounts or frequency
+
+### Risk Categories
+
+| Risk Level | Score Range | Action | Description |
+|------------|-------------|--------|-------------|
+| **GOOD** | 0-33 | ✅ Allow | Low risk, automatic approval |
+| **REVIEW** | 34-66 | ⚠️ Review | Medium risk, manual review required |
+| **BLOCK** | 67-100 | ❌ Block | High risk, automatic rejection |
+
+### IBAN Validation
+
+We implement the **ISO 13616 MOD-97-10** algorithm for IBAN validation:
+
+1. Move first 4 characters to end
+2. Replace letters with numbers (A=10, B=11, etc.)
+3. Calculate MOD 97
+4. Valid if result equals 1
+
+## 🧪 Stress Testing
+
+### JMeter Test Plans
+
+Located in `/stress_tests/` directory:
+
+- **Normal Load Test** (`normal-load-test.jmx`): 100 users, 5-minute duration
+- **Extreme Load Test** (`extreme-load-test.jmx`): 500 users, 10-minute duration
+- **Health Check Test** (`health-test.jmx`): Basic connectivity validation
+
+### Running Stress Tests
+
+```bash
+# Start the application
+docker-compose up -d
+
+# Run normal load test
+docker-compose -f docker-compose.yml -f stress_tests/docker-compose.stress.yml up stress-test
+
+# Run extreme load test
+docker-compose -f docker-compose.yml -f stress_tests/docker-compose.stress.yml up extreme-stress-test
+```
+
+### Performance Targets
+
+- **Response Time**: <200ms for 95% of requests
+- **Error Rate**: <1% under normal load
+- **Throughput**: >1000 requests/minute
+- **Availability**: >99.9% uptime
+
+### Test Results
+
+Test results are saved in `/stress_tests/results/` with:
+- HTML reports for visual analysis
+- CSV data for detailed metrics
+- JMeter logs for debugging
+
+## 🔧 Development
+
+### Project Structure
+
+```
+Instant-Invoice-Fraud-Shield/
+├── api-gateway/                 # API Gateway microservice
+│   ├── src/main/java/
+│   ├── pom.xml
+│   └── Dockerfile
+├── accounts-service/            # Accounts microservice
+│   ├── src/main/java/
+│   ├── pom.xml
+│   └── Dockerfile
+├── frontend/                    # Frontend application
+│   ├── html/
+│   ├── css/
+│   ├── js/
+│   ├── nginx/
+│   └── Dockerfile
+├── database/                    # Database migrations
+│   ├── migrations/
+│   └── init/
+├── stress_tests/               # JMeter test plans
+│   ├── test-plans/
+│   ├── results/
+│   └── Dockerfile
+├── docker-compose.yml          # Main orchestration
+└── README.md
+```
+
+### Building from Source
+
+```bash
+# Build all services
+docker-compose build
+
+# Build specific service
+docker-compose build api-gateway
+
+# Run with rebuild
+docker-compose up --build -d
+```
+
+### Database Migrations
+
+```bash
+# Run migrations manually
+docker-compose exec postgres psql -U postgres -d fraud_detection -f /docker-entrypoint-initdb.d/migrations/V8__Generate_1M_valid_ibans.sql
+
+# Check migration status
+docker-compose exec postgres psql -U postgres -d fraud_detection -c "SELECT * FROM flyway_schema_history;"
+```
+
+### Logging and Debugging
+
+```bash
+# View logs for specific service
+docker-compose logs -f api-gateway
+
+# View all logs
+docker-compose logs -f
+
+# Access database directly
+docker-compose exec postgres psql -U postgres -d fraud_detection
+```
+
+## 🔐 Security Features
 
 ### Authentication & Authorization
-- **JWT Tokens:** Secure, stateless authentication
-- **API Keys:** Internal service communication
-- **Password Hashing:** BCrypt encryption
-- **Session Management:** Redis-based token storage
+- **JWT-based** stateless authentication
+- **X-API-KEY** for microservice communication
+- **Rate limiting** to prevent abuse
+- **Audit logging** for compliance
 
 ### Data Protection
-- **TLS/SSL:** End-to-end encryption
-- **Input Validation:** Comprehensive request validation
-- **SQL Injection Prevention:** Parameterized queries
-- **Rate Limiting:** API request throttling
+- **HTTPS/TLS** encryption for all communications
+- **Input validation** and sanitization
+- **SQL injection** prevention with parameterized queries
+- **XSS protection** with proper headers
 
-### Audit & Compliance
-- **Request Logging:** All API calls logged
-- **Audit Trail:** Complete transaction history
-- **Error Tracking:** Detailed error logging
-- **Performance Monitoring:** Real-time metrics
+### Network Security
+- **Internal Docker network** for service isolation
+- **No direct database access** from external networks
+- **Reverse proxy** for controlled API access
 
-## 🚀 Deployment
+## 📊 Monitoring & Observability
 
-### Production Considerations
-1. **Environment Variables:** Use secure secrets management
-2. **SSL Certificates:** Replace self-signed with valid certificates
-3. **Database Security:** Enable encryption and access controls
-4. **Monitoring:** Implement comprehensive logging and alerting
-5. **Scaling:** Consider horizontal scaling for high availability
+### Health Checks
+- **Application health** endpoints for all services
+- **Database connectivity** monitoring
+- **Redis cache** status validation
+- **Docker container** health monitoring
 
-### Cloud Deployment
-- **Container Registry:** Push images to cloud registry
-- **Orchestration:** Use Kubernetes or similar
-- **Load Balancing:** Implement proper load balancing
-- **Auto-scaling:** Configure based on load metrics
-
-## 📚 Technical Details
-
-### Technology Stack
-- **Backend:** Java 21, Spring Boot 3.2, Spring MVC
-- **Database:** PostgreSQL 15, Flyway migrations
-- **Cache:** Redis 7
-- **Frontend:** HTML5, CSS3, JavaScript (ES6+)
-- **Reverse Proxy:** Nginx with TLS/SSL
-- **Testing:** JMeter 5.5, Docker Compose
-- **Build:** Maven 3.9, Multi-stage Docker builds
-
-### Database Schema
-- **Users:** Authentication and user management
-- **JWT Tokens:** Token storage and validation
-- **Audit Logs:** Request and response logging
-- **IBAN Risk Lookup:** 1M+ risky IBAN database
-- **Risk Assessment:** Stored procedures for fast lookups
-
-### Performance Optimizations
-- **Database Indexing:** Optimized for IBAN lookups
-- **Connection Pooling:** Efficient database connections
-- **Caching Strategy:** Redis for frequently accessed data
-- **Query Optimization:** Stored procedures for complex logic
-- **Response Compression:** Gzip compression for API responses
+### Metrics Collection
+- **Response times** for performance tracking
+- **Error rates** for reliability monitoring
+- **Throughput** for capacity planning
+- **Resource usage** for optimization
 
 ## 🤝 Contributing
 
-### Development Setup
-1. **Clone Repository:** `git clone <repo-url>`
-2. **Install Dependencies:** Java 21, Maven, Docker
-3. **Run Locally:** `mvn spring-boot:run` in each service
-4. **Test Changes:** Run test suite and stress tests
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-### Code Standards
-- **Java:** Follow Spring Boot best practices
-- **Database:** Use Flyway for all schema changes
-- **Testing:** Maintain >80% code coverage
-- **Documentation:** Update README for significant changes
+### Development Guidelines
+
+- Follow Java coding standards
+- Write comprehensive tests
+- Update documentation
+- Ensure Docker builds work
+- Test with stress testing suite
 
 ## 📄 License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
 
-## 🏆 FinLab Challenge
+## 🏆 Acknowledgments
 
-**Project:** Instant Invoice: Fraud Shield  
-**Challenge:** FinLab 2025  
-**Focus:** Supplier payment fraud prevention  
-**Performance:** <200ms response time guarantee  
-**Architecture:** Containerized microservices  
+- **FinLab Challenge** for the opportunity
+- **Spring Boot** community for excellent documentation
+- **Docker** team for containerization tools
+- **PostgreSQL** community for robust database features
+
+## 📞 Support
+
+For questions or support, please:
+- Open an issue on GitHub
+- Check the documentation
+- Review the stress test results
+- Contact the development team
 
 ---
 
-**Built with ❤️ for the FinLab Challenge**  
-*Preventing invoice fraud through intelligent supplier payment validation*
+**Built with ❤️ for the FinLab Challenge**
+
+*Advanced Payment Fraud Detection • Real-time Risk Assessment • Enterprise-Grade Security*
