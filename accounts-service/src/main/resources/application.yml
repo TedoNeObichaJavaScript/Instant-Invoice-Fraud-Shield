@@ -20,6 +20,14 @@ accounts:
   max-response-time-ms: 200
   connection-pool-size: 20
   query-timeout-seconds: 5
+  
+security:
+  sql-injection-protection:
+    enabled: true
+    log-attempts: true
+    block-malicious-requests: true
+    max-input-length: 1000
+    allowed-special-chars: ".,-_()&"
 
 logging:
   level:
