@@ -45,7 +45,6 @@ class PaymentFraudDetectionApp {
         // Payment generation and validation buttons
         const generateBtn = document.getElementById('generatePaymentBtn');
         const validateBtn = document.getElementById('validatePaymentBtn');
-        const fraudCheckBtn = document.getElementById('fraudCheckBtn');
         const unvalidateBtn = document.getElementById('unvalidatePaymentBtn');
 
         if (generateBtn) {
@@ -53,9 +52,6 @@ class PaymentFraudDetectionApp {
         }
         if (validateBtn) {
             validateBtn.addEventListener('click', () => this.validatePayment());
-        }
-        if (fraudCheckBtn) {
-            fraudCheckBtn.addEventListener('click', () => this.performFraudCheck());
         }
         if (unvalidateBtn) {
             unvalidateBtn.addEventListener('click', () => this.unvalidatePayment());
@@ -201,18 +197,11 @@ class PaymentFraudDetectionApp {
                 paymentPurpose: this.generateRandomPurpose(),
                 riskLevel: ibanData[0].riskLevel, // Get actual risk level from database
                 generatedAt: new Date().toISOString(),
-                fraudCheckUsed: false, // Track if fraud check has been used
                 validationUsed: false // Track if validation has been used
             };
 
             this.displayGeneratedPayment();
-            this.enableButtons(['validatePaymentBtn', 'fraudCheckBtn', 'unvalidatePaymentBtn']);
-            
-            // Reset validation button text and state for new payment
-            const validateBtn = document.getElementById('validatePaymentBtn');
-            if (validateBtn) {
-                validateBtn.textContent = 'Validate Payment';
-            }
+            this.enableButtons(['validatePaymentBtn', 'unvalidatePaymentBtn']);
             
             // Automatically perform fraud check after generation
             await this.performFraudCheck();
@@ -225,35 +214,28 @@ class PaymentFraudDetectionApp {
             
             // Fallback to random generation
             const riskLevels = ['GOOD', 'REVIEW', 'BLOCK'];
-            const randomRisk = riskLevels[Math.floor(Math.random() * riskLevels.length)];
-            const ibans = this.generateRandomIBANs(2);
-            
-            this.currentPayment = {
-                invoiceId: `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                amount: parseFloat((Math.random() * 50000 + 100).toFixed(2)),
-                supplierIban: ibans[0],
-                supplierName: this.generateRandomSupplierName(),
-                supplierCountry: 'Bulgaria',
-                paymentPurpose: this.generateRandomPurpose(),
-                riskLevel: randomRisk,
+        const randomRisk = riskLevels[Math.floor(Math.random() * riskLevels.length)];
+        const ibans = this.generateRandomIBANs(2);
+        
+        this.currentPayment = {
+            invoiceId: `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            amount: parseFloat((Math.random() * 50000 + 100).toFixed(2)),
+            supplierIban: ibans[0],
+            supplierName: this.generateRandomSupplierName(),
+            supplierCountry: 'Bulgaria',
+            paymentPurpose: this.generateRandomPurpose(),
+            riskLevel: randomRisk,
                 generatedAt: new Date().toISOString(),
-                fraudCheckUsed: false, // Track if fraud check has been used
                 validationUsed: false // Track if validation has been used
-            };
+        };
 
-            this.displayGeneratedPayment();
-            this.enableButtons(['validatePaymentBtn', 'fraudCheckBtn', 'unvalidatePaymentBtn']);
-            
-            // Reset validation button text and state for new payment
-            const validateBtn = document.getElementById('validatePaymentBtn');
-            if (validateBtn) {
-                validateBtn.textContent = 'Validate Payment';
-            }
-            
-            // Automatically perform fraud check for fallback method too
-            await this.performFraudCheck();
-            
-            this.showMessage('Payment generated with fallback method and fraud checked!', 'warning');
+        this.displayGeneratedPayment();
+        this.enableButtons(['validatePaymentBtn', 'unvalidatePaymentBtn']);
+        
+        // Automatically perform fraud check for fallback method too
+        await this.performFraudCheck();
+        
+        this.showMessage('Payment generated with fallback method and fraud checked!', 'warning');
         }
     }
 
@@ -420,12 +402,13 @@ class PaymentFraudDetectionApp {
             // Mark validation as used
             this.currentPayment.validationUsed = true;
             
-            // Disable the validation button
+            // Keep the validation button enabled but don't change its text
             const validateBtn = document.getElementById('validatePaymentBtn');
             if (validateBtn) {
-                validateBtn.disabled = true;
-                validateBtn.classList.add('disabled');
-                validateBtn.textContent = 'Validated';
+                // Keep the button enabled and styled permanently
+                validateBtn.disabled = false;
+                validateBtn.classList.remove('disabled');
+                // Don't change the text - keep it as "Validate Payment"
             }
             
             // Update IBAN status display to show "Accepted" status
@@ -436,22 +419,22 @@ class PaymentFraudDetectionApp {
             // Update stats with proper risk status
             const riskStatus = 'ALLOW'; // Always allow for validation
             this.updateStats(responseTime, true, riskStatus);
-            
-            // Save to recent validations
-            this.saveValidation({
-                ...this.currentPayment,
+                
+                // Save to recent validations
+                this.saveValidation({
+                    ...this.currentPayment,
                 result: {
                     riskStatus: 'ALLOW',
                     riskLevel: validationResult.riskLevel,
                     reason: 'Payment manually validated and accepted',
                     requiresManualReview: false
                 },
-                responseTime: responseTime,
+                    responseTime: responseTime,
                 timestamp: new Date().toISOString(),
                 validationType: 'manual'
-            });
-            
-            this.loadRecentValidations();
+                });
+                
+                this.loadRecentValidations();
             
         } catch (error) {
             this.showMessage('Payment validation failed', 'error');
@@ -461,12 +444,6 @@ class PaymentFraudDetectionApp {
     async performFraudCheck() {
         if (!this.currentPayment) {
             this.showMessage('No payment to check. Please generate a payment first.', 'error');
-            return;
-        }
-
-        // Check if fraud check has already been used for this payment
-        if (this.currentPayment.fraudCheckUsed) {
-            this.showMessage('Fraud check already performed for this payment. Generate a new payment to check again.', 'warning');
             return;
         }
 
@@ -489,17 +466,6 @@ class PaymentFraudDetectionApp {
             
             if (response.ok) {
                 const result = await response.json();
-                
-                // Mark fraud check as used
-                this.currentPayment.fraudCheckUsed = true;
-                
-                // Disable the fraud check button
-                const fraudCheckBtn = document.getElementById('fraudCheckBtn');
-                if (fraudCheckBtn) {
-                    fraudCheckBtn.disabled = true;
-                    fraudCheckBtn.classList.add('disabled');
-                    fraudCheckBtn.textContent = 'Fraud Checked';
-                }
                 
                 this.displayFraudResults(result, responseTime);
                 
@@ -832,18 +798,13 @@ class PaymentFraudDetectionApp {
     }
 
     resetButtons() {
-        const buttons = ['validatePaymentBtn', 'fraudCheckBtn', 'unvalidatePaymentBtn'];
+        const buttons = ['validatePaymentBtn', 'unvalidatePaymentBtn'];
         buttons.forEach(id => {
             const btn = document.getElementById(id);
             if (btn) {
                 btn.disabled = true;
                 btn.classList.add('disabled');
-                // Reset button text
-                if (id === 'fraudCheckBtn') {
-                    btn.textContent = 'Mark as Fraud';
-                } else if (id === 'validatePaymentBtn') {
-                    btn.textContent = 'Validate Payment';
-                }
+                // Don't reset validation button text - keep it as "Validate Payment"
             }
         });
     }
@@ -918,23 +879,23 @@ class PaymentFraudDetectionApp {
                              validationType === 'manual' ? 'Validated' : 'Unknown';
             
             return `
-                <div class="validation-item">
-                    <div class="validation-header">
-                        <span class="invoice-id">${validation.invoiceId}</span>
+            <div class="validation-item">
+                <div class="validation-header">
+                    <span class="invoice-id">${validation.invoiceId}</span>
                         <span class="validation-type">${typeLabel}</span>
                         <span class="risk-status ${statusClass}">
                             ${this.formatRiskStatus(riskStatus)}
-                        </span>
-                    </div>
-                    <div class="validation-details">
-                        <span class="supplier">${validation.supplierName}</span>
-                        <span class="amount">${validation.amount} BGN</span>
-                        <span class="time">${validation.responseTime}ms</span>
-                    </div>
-                    <div class="validation-timestamp">
-                        ${new Date(validation.timestamp).toLocaleString()}
-                    </div>
+                    </span>
                 </div>
+                <div class="validation-details">
+                    <span class="supplier">${validation.supplierName}</span>
+                    <span class="amount">${validation.amount} BGN</span>
+                    <span class="time">${validation.responseTime}ms</span>
+                </div>
+                <div class="validation-timestamp">
+                    ${new Date(validation.timestamp).toLocaleString()}
+                </div>
+            </div>
             `;
         }).join('');
         
