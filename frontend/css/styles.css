@@ -291,6 +291,528 @@ body {
     margin: 0;
 }
 
+/* Modern Login Styles */
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.login-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 3rem;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+    border-radius: 20px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.login-logo {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.login-icon {
+    width: 32px;
+    height: 32px;
+    color: white;
+}
+
+.login-header h2 {
+    color: var(--gray-900);
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+}
+
+.login-header p {
+    color: var(--gray-600);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.login-form {
+    position: relative;
+    z-index: 1;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    width: 20px;
+    height: 20px;
+    color: var(--gray-400);
+    z-index: 2;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 0.875rem 1rem 0.875rem 3rem;
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid var(--gray-200);
+    border-radius: 12px;
+    color: var(--gray-900);
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.input-wrapper input::placeholder {
+    color: var(--gray-400);
+}
+
+.input-wrapper input:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+}
+
+.login-btn {
+    width: 100%;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.login-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.login-btn:hover::before {
+    left: 100%;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(59, 130, 246, 0.4);
+}
+
+.login-btn:active {
+    transform: translateY(0);
+}
+
+.btn-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.login-footer p {
+    color: var(--gray-500);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* Modern Glassmorphism Login Styles */
+.modern-login-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    z-index: 1000;
+}
+
+.modern-login-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+}
+
+.modern-login-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 3rem;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.modern-login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border-radius: 24px;
+}
+
+.modern-login-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.modern-logo {
+    width: 72px;
+    height: 72px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.modern-logo-icon {
+    width: 36px;
+    height: 36px;
+    color: white;
+}
+
+.modern-login-header h1 {
+    color: white;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.75rem 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.modern-login-header p {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.modern-login-form {
+    position: relative;
+    z-index: 1;
+}
+
+.modern-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.modern-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.modern-input-icon {
+    position: absolute;
+    left: 1.25rem;
+    width: 20px;
+    height: 20px;
+    color: rgba(255, 255, 255, 0.6);
+    z-index: 2;
+}
+
+.modern-input-wrapper input {
+    width: 100%;
+    padding: 1rem 1.25rem 1rem 3.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.modern-input-wrapper input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.modern-input-wrapper input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.password-toggle {
+    position: absolute;
+    right: 1.25rem;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.password-toggle:hover {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.eye-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.modern-form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.modern-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+}
+
+.modern-checkbox input {
+    display: none;
+}
+
+.checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    margin-right: 0.75rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.modern-checkbox input:checked + .checkmark {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.modern-checkbox input:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.forgot-password {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.forgot-password:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.modern-login-btn {
+    width: 100%;
+    padding: 1.25rem 2rem;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.modern-login-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.modern-login-btn:hover::before {
+    left: 100%;
+}
+
+.modern-login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.modern-login-btn:active {
+    transform: translateY(0);
+}
+
+.modern-btn-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.modern-login-footer {
+    margin-top: 2.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.divider {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.divider span {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0 1rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    position: relative;
+}
+
+.social-login {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.social-btn {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.social-btn:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.social-icon {
+    width: 24px;
+    height: 24px;
+}
+
 .user-info {
     display: flex;
     align-items: center;
