@@ -15,6 +15,7 @@ class PaymentFraudDetectionApp {
             blockedPayments: 0
         };
         this.statsUpdated = false; // Flag to prevent duplicate stat updates
+        this.validationInProgress = false; // Flag to prevent duplicate validations
         this.init();
     }
 
@@ -1059,11 +1060,43 @@ class PaymentFraudDetectionApp {
     }
 
     saveValidation(validation) {
+        // Prevent duplicate validations if one is already in progress
+        if (this.validationInProgress) {
+            console.log('Validation already in progress, skipping duplicate save');
+            return;
+        }
+        
+        // Create a unique identifier for this validation
+        const validationId = `${validation.invoiceId}-${validation.validationType}-${validation.timestamp}`;
+        
+        // Check if this validation already exists
+        const existingValidation = this.validations.find(v => 
+            v.invoiceId === validation.invoiceId && 
+            v.validationType === validation.validationType &&
+            Math.abs(new Date(v.timestamp) - new Date(validation.timestamp)) < 1000 // Within 1 second
+        );
+        
+        if (existingValidation) {
+            console.log('Duplicate validation detected, skipping save:', validationId);
+            return;
+        }
+        
+        // Mark validation as in progress
+        this.validationInProgress = true;
+        
+        // Add unique identifier to validation
+        validation.id = validationId;
+        
         this.validations.unshift(validation);
         if (this.validations.length > 100) {
             this.validations = this.validations.slice(0, 100);
         }
         localStorage.setItem('fraudShieldValidations', JSON.stringify(this.validations));
+        
+        // Reset flag after a short delay
+        setTimeout(() => {
+            this.validationInProgress = false;
+        }, 500);
     }
 
     showMessage(message, type = 'info') {
