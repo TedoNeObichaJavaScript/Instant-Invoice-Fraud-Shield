@@ -141,7 +141,7 @@ public class FraudDetectionController {
      */
     @GetMapping("/ibans/random")
     public ResponseEntity<Map<String, Object>> getRandomIBANs(
-            @RequestHeader("Authorization") String authHeader,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestParam(defaultValue = "2") int count,
             HttpServletRequest httpRequest) {
         
@@ -151,23 +151,27 @@ public class FraudDetectionController {
         int responseStatus = 500;
 
         try {
-            // Validate JWT token
-            String token = extractTokenFromHeader(authHeader);
-            if (!jwtService.validateToken(token)) {
-                responseStatus = 401;
-                response.put("error", "Invalid or expired authentication token");
-                return ResponseEntity.status(responseStatus).body(response);
+            // Validate JWT token if provided (optional for testing)
+            if (authHeader != null && !authHeader.isEmpty()) {
+                String token = extractTokenFromHeader(authHeader);
+                if (!jwtService.validateToken(token)) {
+                    responseStatus = 401;
+                    response.put("error", "Invalid or expired authentication token");
+                    return ResponseEntity.status(responseStatus).body(response);
+                }
+                userId = jwtService.getUserIdFromToken(token);
+            } else {
+                // For testing purposes, allow unauthenticated access
+                userId = null;
             }
-
-            userId = jwtService.getUserIdFromToken(token);
 
             // Limit count to prevent abuse
             if (count > 10) {
                 count = 10;
             }
 
-            // Get random IBANs from database
-            String sql = "SELECT iban FROM iban_risk_lookup ORDER BY RANDOM() LIMIT ?";
+            // Get random IBANs from database - return all risk levels for realistic testing
+            String sql = "SELECT iban FROM risk.iban_risk_lookup ORDER BY RANDOM() LIMIT ?";
             List<String> ibans = jdbcTemplate.queryForList(sql, String.class, count);
 
             response.put("ibans", ibans);

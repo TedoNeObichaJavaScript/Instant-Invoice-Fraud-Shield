@@ -131,6 +131,39 @@ public class FraudDetectionService {
                         requiresManualReview = true;
                     }
                 }
+
+                // Check for duplicate payments
+                if (hasDuplicatePayment(request)) {
+                    anomalies.add("Potential duplicate payment detected");
+                    if ("ALLOW".equals(riskStatus)) {
+                        riskStatus = "REVIEW";
+                        riskLevel = "REVIEW";
+                        reason = "Duplicate payment pattern detected";
+                        requiresManualReview = true;
+                    }
+                }
+
+                // Check for unusual timing
+                if (hasUnusualTiming(request)) {
+                    anomalies.add("Unusual payment timing detected");
+                    if ("ALLOW".equals(riskStatus)) {
+                        riskStatus = "REVIEW";
+                        riskLevel = "REVIEW";
+                        reason = "Payment timing requires review";
+                        requiresManualReview = true;
+                    }
+                }
+
+                // Check for velocity anomalies
+                if (hasVelocityAnomaly(request)) {
+                    anomalies.add("High-frequency payment pattern detected");
+                    if ("ALLOW".equals(riskStatus)) {
+                        riskStatus = "REVIEW";
+                        riskLevel = "REVIEW";
+                        reason = "High payment velocity detected";
+                        requiresManualReview = true;
+                    }
+                }
             }
 
             // 7. Log the analysis result
@@ -254,6 +287,16 @@ public class FraudDetectionService {
             return true;
         }
         
+        // Check for suspicious amount patterns
+        if (request.getAmount().remainder(BigDecimal.valueOf(100)).compareTo(BigDecimal.ZERO) == 0) {
+            return true; // Round hundreds
+        }
+        
+        // Check for amounts ending in .99 (common fraud pattern)
+        if (request.getAmount().toString().endsWith(".99")) {
+            return true;
+        }
+        
         return false;
     }
 
@@ -332,6 +375,61 @@ public class FraudDetectionService {
         } catch (Exception e) {
             // Log error but don't fail the analysis
             System.err.println("Failed to log fraud analysis: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Check for duplicate payment patterns
+     */
+    private boolean hasDuplicatePayment(FraudDetectionRequest request) {
+        try {
+            // Check for same amount and IBAN within last 24 hours
+            String sql = """
+                SELECT COUNT(*) FROM fraud_analysis_log 
+                WHERE supplier_iban = ? AND amount = ? 
+                AND created_at > NOW() - INTERVAL '24 hours'
+                """;
+            
+            Integer count = jdbcTemplate.queryForObject(sql, Integer.class, 
+                request.getSupplierIban(), request.getAmount());
+            
+            return count != null && count > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check for unusual payment timing
+     */
+    private boolean hasUnusualTiming(FraudDetectionRequest request) {
+        // Check if payment is made outside business hours (simplified)
+        LocalDateTime now = LocalDateTime.now();
+        int hour = now.getHour();
+        
+        // Flag payments made between 11 PM and 6 AM
+        return hour >= 23 || hour <= 6;
+    }
+
+    /**
+     * Check for velocity anomalies (high frequency payments)
+     */
+    private boolean hasVelocityAnomaly(FraudDetectionRequest request) {
+        try {
+            // Check for multiple payments from same IBAN in last hour
+            String sql = """
+                SELECT COUNT(*) FROM fraud_analysis_log 
+                WHERE supplier_iban = ? 
+                AND created_at > NOW() - INTERVAL '1 hour'
+                """;
+            
+            Integer count = jdbcTemplate.queryForObject(sql, Integer.class, 
+                request.getSupplierIban());
+            
+            // Flag if more than 3 payments in last hour
+            return count != null && count > 3;
+        } catch (Exception e) {
+            return false;
         }
     }
 }

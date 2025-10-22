@@ -6,6 +6,7 @@ class PaymentFraudDetectionApp {
         this.currentUser = null;
         this.currentPayment = null;
         this.validations = [];
+        this.messageQueue = []; // Track last 3 messages
         this.stats = {
             totalPayments: 0,
             fraudDetected: 0,
@@ -185,6 +186,9 @@ class PaymentFraudDetectionApp {
 
     async generatePayment() {
         try {
+            // Show loading state
+            this.showMessage('Generating payment and performing fraud check...', 'info');
+            
             // Get random IBANs from database
             const ibans = await this.getRandomIBANsFromDatabase(2);
             
@@ -201,7 +205,10 @@ class PaymentFraudDetectionApp {
 
             this.displayGeneratedPayment();
             this.enableButtons(['validatePaymentBtn', 'fraudCheckBtn', 'unvalidatePaymentBtn']);
-            this.showMessage('Payment generated successfully with real IBANs!', 'success');
+            
+            // Automatically perform fraud check after generation
+            await this.performFraudCheck();
+            
         } catch (error) {
             console.error('Error generating payment:', error);
             this.showMessage('Using fallback IBAN generation method.', 'warning');
@@ -224,7 +231,11 @@ class PaymentFraudDetectionApp {
 
             this.displayGeneratedPayment();
             this.enableButtons(['validatePaymentBtn', 'fraudCheckBtn', 'unvalidatePaymentBtn']);
-            this.showMessage('Payment generated with fallback method!', 'warning');
+            
+            // Automatically perform fraud check for fallback method too
+            await this.performFraudCheck();
+            
+            this.showMessage('Payment generated with fallback method and fraud checked!', 'warning');
         }
     }
 
@@ -335,28 +346,32 @@ class PaymentFraudDetectionApp {
         try {
             const startTime = Date.now();
             
-            // Simulate payment validation (in real app, this would call the API)
-            const validationResult = await this.simulatePaymentValidation();
+            // Simulate payment validation - always accept/validate the payment
+            const validationResult = {
+                valid: true,
+                riskLevel: this.currentPayment.riskLevel || 'GOOD',
+                message: 'Payment accepted and validated'
+            };
             
             const responseTime = Date.now() - startTime;
             
-            // Update IBAN status display based on validation result
-            this.updateIbanStatusDisplay(validationResult.riskLevel, 'Validated');
+            // Update IBAN status display to show "Accepted" status
+            this.updateIbanStatusDisplay(validationResult.riskLevel, 'Accepted');
             
-            this.showMessage(`Payment validated successfully in ${responseTime}ms`, 'success');
+            this.showMessage(`Payment accepted and validated in ${responseTime}ms`, 'success');
             
             // Update stats with proper risk status
-            const riskStatus = validationResult.valid ? 'ALLOW' : 'REVIEW';
+            const riskStatus = 'ALLOW'; // Always allow for validation
             this.updateStats(responseTime, true, riskStatus);
             
             // Save to recent validations
             this.saveValidation({
                 ...this.currentPayment,
                 result: {
-                    riskStatus: validationResult.valid ? 'ALLOW' : 'REVIEW',
+                    riskStatus: 'ALLOW',
                     riskLevel: validationResult.riskLevel,
-                    reason: validationResult.message,
-                    requiresManualReview: !validationResult.valid
+                    reason: 'Payment manually validated and accepted',
+                    requiresManualReview: false
                 },
                 responseTime: responseTime,
                 timestamp: new Date().toISOString(),
@@ -396,6 +411,13 @@ class PaymentFraudDetectionApp {
             if (response.ok) {
                 const result = await response.json();
                 this.displayFraudResults(result, responseTime);
+                
+                // Show success message with timing
+                if (responseTime < 200) {
+                    this.showMessage(`Fraud check completed in ${responseTime}ms - Excellent performance!`, 'success');
+                } else {
+                    this.showMessage(`Fraud check completed in ${responseTime}ms`, 'info');
+                }
                 this.updateStats(responseTime, true, result.riskStatus);
                 
                 // Update IBAN status display based on fraud check result
@@ -538,19 +560,22 @@ class PaymentFraudDetectionApp {
         switch (riskStatus) {
             case 'ALLOW':
                 // Payment is automatically approved
-                this.showMessage('✅ Payment automatically approved - Low risk detected', 'success');
+                const allowMessage = `✅ Payment ${this.currentPayment?.invoiceId || 'Unknown'} approved - Low risk detected`;
+                this.showMessage(allowMessage, 'success');
                 this.updateStats(0, true, 'ALLOW'); // Update stats for successful payment
                 break;
                 
             case 'REVIEW':
                 // Payment requires manual review
-                this.showMessage('⚠️ Payment flagged for manual review - Medium risk detected', 'warning');
+                const reviewMessage = `⚠️ Payment ${this.currentPayment?.invoiceId || 'Unknown'} flagged for review - Medium risk detected`;
+                this.showMessage(reviewMessage, 'warning');
                 this.showManualReviewPrompt(result);
                 break;
                 
             case 'BLOCK':
                 // Payment is automatically blocked
-                this.showMessage('🚫 Payment automatically blocked - High risk detected', 'error');
+                const blockMessage = `🚫 Payment ${this.currentPayment?.invoiceId || 'Unknown'} blocked - High risk detected`;
+                this.showMessage(blockMessage, 'error');
                 this.updateStats(0, false, 'BLOCK'); // Update stats for blocked payment
                 this.showBlockedPaymentDetails(result);
                 break;
@@ -837,23 +862,57 @@ class PaymentFraudDetectionApp {
     }
 
     showMessage(message, type = 'info') {
-        // Create or update message element
-        let messageDiv = document.getElementById('messageDiv');
-        if (!messageDiv) {
-            messageDiv = document.createElement('div');
-            messageDiv.id = 'messageDiv';
-            messageDiv.className = 'message';
-            document.body.appendChild(messageDiv);
+        // Create unique message ID to prevent duplicates
+        const messageId = `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Only show messages for payment-related actions (limit to last 3)
+        const paymentActions = ['Payment accepted', 'Payment blocked', 'Payment processed', 'Fraud check completed', 'Payment generated'];
+        const isPaymentAction = paymentActions.some(action => message.includes(action));
+        
+        if (isPaymentAction) {
+            // Add to message queue with unique ID
+            this.messageQueue.push({ 
+                id: messageId,
+                message, 
+                type, 
+                timestamp: Date.now() 
+            });
+            
+            // Keep only last 3 payment messages
+            if (this.messageQueue.length > 3) {
+                this.messageQueue.shift();
+            }
+            
+            // Clear old messages
+            this.clearOldMessages();
         }
         
-        messageDiv.textContent = message;
+        // Remove any existing message elements
+        const existingMessages = document.querySelectorAll('.message');
+        existingMessages.forEach(msg => msg.remove());
+        
+        // Create new message element with unique ID
+        const messageDiv = document.createElement('div');
+        messageDiv.id = `message-${messageId}`;
         messageDiv.className = `message message-${type}`;
+        messageDiv.textContent = message;
         messageDiv.style.display = 'block';
+        document.body.appendChild(messageDiv);
         
         // Auto-hide after 3 seconds
         setTimeout(() => {
-            messageDiv.style.display = 'none';
+            const msgElement = document.getElementById(`message-${messageId}`);
+            if (msgElement) {
+                msgElement.style.display = 'none';
+                msgElement.remove();
+            }
         }, 3000);
+    }
+    
+    clearOldMessages() {
+        // Remove messages older than 10 seconds
+        const now = Date.now();
+        this.messageQueue = this.messageQueue.filter(msg => (now - msg.timestamp) < 10000);
     }
 
     setupAnimations() {
