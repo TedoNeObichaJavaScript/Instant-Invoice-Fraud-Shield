@@ -11,8 +11,10 @@ class PaymentFraudDetectionApp {
             totalPayments: 0,
             fraudDetected: 0,
             avgResponseTime: 0,
-            successRate: 0
+            successRate: 0,
+            blockedPayments: 0
         };
+        this.statsUpdated = false; // Flag to prevent duplicate stat updates
         this.init();
     }
 
@@ -182,6 +184,9 @@ class PaymentFraudDetectionApp {
 
     async generatePayment() {
         try {
+            // Reset stats update flag for new payment
+            this.statsUpdated = false;
+            
             // Show loading state
             this.showMessage('Generating payment...', 'info');
             
@@ -872,6 +877,13 @@ class PaymentFraudDetectionApp {
     }
 
     updateStats(responseTime, success, riskStatus = null) {
+        // Prevent duplicate stat updates for the same payment
+        if (this.statsUpdated) {
+            console.log('Stats already updated for this payment, skipping duplicate update');
+            return;
+        }
+        
+        this.statsUpdated = true; // Mark as updated
         this.stats.totalPayments++;
         
         // Increment fraud detected only for actual fraud cases (BLOCK or REVIEW)
