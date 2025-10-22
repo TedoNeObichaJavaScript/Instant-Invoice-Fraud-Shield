@@ -201,11 +201,18 @@ class PaymentFraudDetectionApp {
                 paymentPurpose: this.generateRandomPurpose(),
                 riskLevel: ibanData[0].riskLevel, // Get actual risk level from database
                 generatedAt: new Date().toISOString(),
-                fraudCheckUsed: false // Track if fraud check has been used
+                fraudCheckUsed: false, // Track if fraud check has been used
+                validationUsed: false // Track if validation has been used
             };
 
             this.displayGeneratedPayment();
             this.enableButtons(['validatePaymentBtn', 'fraudCheckBtn', 'unvalidatePaymentBtn']);
+            
+            // Reset validation button text and state for new payment
+            const validateBtn = document.getElementById('validatePaymentBtn');
+            if (validateBtn) {
+                validateBtn.textContent = 'Validate Payment';
+            }
             
             // Automatically perform fraud check after generation
             await this.performFraudCheck();
@@ -230,11 +237,18 @@ class PaymentFraudDetectionApp {
                 paymentPurpose: this.generateRandomPurpose(),
                 riskLevel: randomRisk,
                 generatedAt: new Date().toISOString(),
-                fraudCheckUsed: false // Track if fraud check has been used
+                fraudCheckUsed: false, // Track if fraud check has been used
+                validationUsed: false // Track if validation has been used
             };
 
             this.displayGeneratedPayment();
             this.enableButtons(['validatePaymentBtn', 'fraudCheckBtn', 'unvalidatePaymentBtn']);
+            
+            // Reset validation button text and state for new payment
+            const validateBtn = document.getElementById('validatePaymentBtn');
+            if (validateBtn) {
+                validateBtn.textContent = 'Validate Payment';
+            }
             
             // Automatically perform fraud check for fallback method too
             await this.performFraudCheck();
@@ -385,6 +399,12 @@ class PaymentFraudDetectionApp {
             return;
         }
 
+        // Check if validation has already been used for this payment
+        if (this.currentPayment.validationUsed) {
+            this.showMessage('Payment already validated. Generate a new payment to validate again.', 'warning');
+            return;
+        }
+
         try {
             const startTime = Date.now();
             
@@ -396,6 +416,17 @@ class PaymentFraudDetectionApp {
             };
             
             const responseTime = Date.now() - startTime;
+            
+            // Mark validation as used
+            this.currentPayment.validationUsed = true;
+            
+            // Disable the validation button
+            const validateBtn = document.getElementById('validatePaymentBtn');
+            if (validateBtn) {
+                validateBtn.disabled = true;
+                validateBtn.classList.add('disabled');
+                validateBtn.textContent = 'Validated';
+            }
             
             // Update IBAN status display to show "Accepted" status
             this.updateIbanStatusDisplay(validationResult.riskLevel, 'Accepted');
@@ -807,9 +838,11 @@ class PaymentFraudDetectionApp {
             if (btn) {
                 btn.disabled = true;
                 btn.classList.add('disabled');
-                // Reset fraud check button text
+                // Reset button text
                 if (id === 'fraudCheckBtn') {
                     btn.textContent = 'Mark as Fraud';
+                } else if (id === 'validatePaymentBtn') {
+                    btn.textContent = 'Validate Payment';
                 }
             }
         });
