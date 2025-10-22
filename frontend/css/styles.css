@@ -1488,7 +1488,7 @@ body:not(:has(.dashboard)) .main-content {
 }
 
 /* Hide footer on login page */
-body:not(:has(.dashboard)) .footer {
+body:has(.modern-login-container) .footer {
     display: none;
 }
 
