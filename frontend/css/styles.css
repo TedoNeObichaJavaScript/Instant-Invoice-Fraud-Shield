@@ -80,7 +80,7 @@ body {
 }
 
 .container {
-    max-width: 95%;
+    max-width: 98%;
     margin: 0 auto;
     padding: 0 1rem;
 }
@@ -89,8 +89,8 @@ body {
 .header {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    padding: 1.5rem 0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 0.75rem 0;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
     border-bottom: 1px solid var(--gray-200);
     width: 100%;
     position: sticky;
@@ -104,20 +104,21 @@ body {
     align-items: center;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+
 .logo h1 {
     color: var(--gray-900);
-    font-size: 1.875rem;
+    font-size: 1.25rem;
     font-weight: 700;
-    margin-bottom: 0.25rem;
+    margin: 0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-}
-
-.logo p {
-    color: var(--gray-600);
-    font-size: 0.875rem;
-    font-weight: 500;
 }
 
 .auth-section {
@@ -296,20 +297,20 @@ body {
 }
 
 .user-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 12px;
-    padding: 16px 24px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    min-width: 300px;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .user-avatar {
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.2);
+    width: 2rem;
+    height: 2rem;
+    background: var(--primary-500);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -320,37 +321,37 @@ body {
 .user-details {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    gap: 0.125rem;
 }
 
 .user-name {
-    color: white;
     font-weight: 600;
-    font-size: 16px;
-    margin-bottom: 4px;
+    font-size: 0.875rem;
+    color: var(--gray-900);
 }
 
 .user-role {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 12px;
+    font-size: 0.75rem;
+    color: var(--gray-600);
 }
 
+
 .logout-btn {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.2);
+    padding: 0.375rem 0.75rem;
+    background: var(--danger-500);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 8px;
+    border: none;
+    border-radius: 0.375rem;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 0.75rem;
     display: flex;
     align-items: center;
-    gap: 6px;
-    transition: all 0.3s ease;
+    gap: 0.375rem;
+    transition: all 0.2s ease;
 }
 
 .logout-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--danger-600);
     transform: translateY(-1px);
 }
 
