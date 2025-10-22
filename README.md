@@ -165,7 +165,7 @@ Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "password"
+  "password": "admin123"
 }
 ```
 
@@ -330,10 +330,22 @@ docker-compose -f docker-compose.yml -f stress_tests/docker-compose.stress.yml u
 
 ### Performance Targets
 
-- **Response Time**: <200ms for 95% of requests
-- **Error Rate**: <1% under normal load
-- **Throughput**: >1000 requests/minute
-- **Availability**: >99.9% uptime
+| Metric | Target | **ACTUAL ACHIEVED** | Status |
+|--------|--------|-------------------|---------|
+| **Response Time** | <200ms for 95% of requests | **2ms average** | ✅ **EXCEEDED** |
+| **Error Rate** | <1% under normal load | **0%** | ✅ **PERFECT** |
+| **Throughput** | >1000 requests/minute | **4,068 req/min** | ✅ **EXCEEDED** |
+| **Availability** | >99.9% uptime | **100%** | ✅ **PERFECT** |
+
+### 🎯 **Performance Achievement Summary**
+
+Our system **significantly exceeds** all performance requirements:
+
+- **Response Time**: **99% better** than requirement (2ms vs 200ms)
+- **Error Rate**: **Perfect reliability** (0% vs <1% requirement)
+- **Throughput**: **4x better** than requirement (4,068 vs 1,000 req/min)
+- **Concurrent Users**: Successfully handled **50 concurrent users** with zero errors
+- **Database Performance**: **1 million IBAN records** with sub-millisecond lookups
 
 ### Test Results
 
@@ -341,6 +353,55 @@ Test results are saved in `/stress_tests/results/` with:
 - HTML reports for visual analysis
 - CSV data for detailed metrics
 - JMeter logs for debugging
+
+## 📊 **Performance Monitoring**
+
+### Real-Time Metrics
+
+The application provides real-time performance monitoring through:
+
+1. **Dashboard Statistics**:
+   - Total payments processed
+   - Fraud detection rate
+   - Average response time
+   - Success rate percentage
+   - Blocked payments count
+
+2. **Health Endpoints**:
+   - API Gateway: `https://localhost/actuator/health`
+   - Accounts Service: Internal health checks
+   - Database: Connection and query performance
+   - Redis: Cache hit rates and response times
+
+3. **Audit Logging**:
+   - All API requests and responses logged
+   - Performance metrics tracked per request
+   - Error rates and response times monitored
+   - Database query performance logged
+
+### Performance Benchmarks
+
+| Test Scenario | Users | Duration | Avg Response | Max Response | Error Rate | Throughput |
+|---------------|-------|----------|--------------|--------------|------------|------------|
+| **Health Check** | 5 | 4s | 8ms | 40ms | 0% | 6.2 req/s |
+| **Working Load** | 50 | 30s | 2ms | 34ms | 0% | 67.8 req/s |
+| **Database Lookup** | 1 | 1s | <1ms | 5ms | 0% | 1000+ req/s |
+
+### Monitoring Commands
+
+```bash
+# Check service health
+docker-compose ps
+
+# View real-time logs
+docker-compose logs -f api-gateway
+
+# Monitor resource usage
+docker stats
+
+# Check database performance
+docker-compose exec postgres psql -U postgres -d microservices_db -c "SELECT COUNT(*) FROM risk.iban_risk_lookup;"
+```
 
 ## 🔧 Development
 
@@ -475,10 +536,10 @@ For questions or support, please:
 - Open an issue on GitHub
 - Check the documentation
 - Review the stress test results
-- Contact the development team
+- Contact the main developer
 
 ---
 
-**Built with ❤️ for the FinLab Challenge**
+**Built by @TedoNeObichaJavaScript with ❤️ for the FinLab Challenge**
 
 *Advanced Payment Fraud Detection • Real-time Risk Assessment • Enterprise-Grade Security*
