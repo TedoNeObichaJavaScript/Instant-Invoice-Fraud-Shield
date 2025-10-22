@@ -22,7 +22,9 @@ WORKDIR /tests
 
 # Copy test plans
 COPY test-plans/ /tests/test-plans/
-COPY results/ /tests/results/
+
+# Create results directory
+RUN mkdir -p /tests/results
 
 # Create entrypoint script
 RUN echo '#!/bin/sh' > /entrypoint.sh && \
