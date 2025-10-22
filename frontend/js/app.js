@@ -16,6 +16,7 @@ class PaymentFraudDetectionApp {
         };
         this.statsUpdated = false; // Flag to prevent duplicate stat updates
         this.validationInProgress = false; // Flag to prevent duplicate validations
+        this.reviewModalClicked = false; // Flag to prevent double-clicks on review modal
         this.init();
     }
 
@@ -645,6 +646,17 @@ class PaymentFraudDetectionApp {
     }
 
     showManualReviewPrompt(result) {
+        // Reset the click flag for this new modal
+        this.reviewModalClicked = false;
+        
+        // Debug: Log the result object to see what we're working with
+        console.log('=== SHOW MANUAL REVIEW PROMPT ===');
+        console.log('Result object:', result);
+        console.log('Current payment:', this.currentPayment);
+        console.log('Result riskStatus:', result?.riskStatus);
+        console.log('Result riskLevel:', result?.riskLevel);
+        console.log('Review modal clicked flag reset to:', this.reviewModalClicked);
+        
         // Create a modal or notification for manual review
         const reviewModal = document.createElement('div');
         reviewModal.className = 'review-modal';
@@ -664,7 +676,7 @@ class PaymentFraudDetectionApp {
             </div>
         `;
         
-        // Add modal styles
+        // Add modal styles - SIMPLIFIED, NO TRANSITIONS
         const style = document.createElement('style');
         style.textContent = `
             .review-modal {
@@ -692,65 +704,55 @@ class PaymentFraudDetectionApp {
                 margin-top: 1rem;
             }
             .review-actions button {
-                position: relative;
-                overflow: hidden;
-                transition: all 0.2s ease;
-            }
-            .review-actions button:active {
-                transform: scale(0.98);
+                padding: 0.75rem 1.5rem;
+                border: none;
+                border-radius: 0.5rem;
+                font-weight: 600;
+                cursor: pointer;
+                flex: 1;
             }
             .review-actions button:disabled {
                 opacity: 0.6;
                 cursor: not-allowed;
                 pointer-events: none;
             }
-            .review-actions button.processing {
-                opacity: 0.7;
-                cursor: wait;
-                position: relative;
-                pointer-events: none;
-                transition: opacity 0.3s ease;
-            }
-            .review-actions button.processing::after {
-                content: '';
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 20px;
-                height: 20px;
-                margin: -10px 0 0 -10px;
-                border: 3px solid transparent;
-                border-top: 3px solid currentColor;
-                border-radius: 50%;
-                animation: spin 0.8s linear infinite;
-                z-index: 1;
-            }
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            .review-actions button:not(.processing)::after {
-                display: none;
-            }
         `;
         document.head.appendChild(style);
         document.body.appendChild(reviewModal);
         
-        // Track if action has been taken to prevent double-clicks
-        let actionTaken = false;
+        // Add simple event listeners - close immediately on click
+        const approveBtn = reviewModal.querySelector('#approveBtn');
+        const rejectBtn = reviewModal.querySelector('#rejectBtn');
         
-        // Function to handle button processing (modal is already closed)
-        const handleButtonAction = (actionType) => {
-            if (actionTaken) {
-                console.log('Action already taken, ignoring click');
-                return;
-            }
-            
-            actionTaken = true;
-            console.log(`${actionType} button clicked - processing in background`);
-            
-            // Process the action immediately since modal is already closed
-            if (actionType === 'Approve') {
+        console.log('=== SETTING UP EVENT LISTENERS ===');
+        console.log('Approve button found:', !!approveBtn);
+        console.log('Reject button found:', !!rejectBtn);
+        console.log('Review modal clicked flag:', this.reviewModalClicked);
+        
+        if (approveBtn) {
+            approveBtn.addEventListener('click', (e) => {
+                console.log('=== APPROVE BUTTON CLICKED ===');
+                console.log('Review modal clicked flag:', this.reviewModalClicked);
+                console.log('Event:', e);
+                
+                if (this.reviewModalClicked) {
+                    console.log('❌ Already clicked, ignoring');
+                    return;
+                }
+                this.reviewModalClicked = true;
+                console.log('✅ Processing approve click');
+                
+                // Close modal immediately
+                reviewModal.remove();
+                if (style && style.parentNode) {
+                    style.remove();
+                }
+                
+                // Update the current payment status
+                this.currentPayment.riskStatus = 'ALLOW';
+                this.currentPayment.riskLevel = 'GOOD';
+                this.currentPayment.finalStatus = 'ALLOW';
+                
                 this.showMessage('Payment approved after manual review - Status: GOOD', 'success');
                 this.updateStats(0, true, 'ALLOW');
                 this.updateIbanStatusDisplay('GOOD', 'ALLOW');
@@ -777,8 +779,33 @@ class PaymentFraudDetectionApp {
                 });
 
                 this.loadRecentValidations();
+            });
+        }
+        
+        if (rejectBtn) {
+            rejectBtn.addEventListener('click', (e) => {
+                console.log('=== REJECT BUTTON CLICKED ===');
+                console.log('Review modal clicked flag:', this.reviewModalClicked);
+                console.log('Event:', e);
                 
-            } else if (actionType === 'Reject') {
+                if (this.reviewModalClicked) {
+                    console.log('❌ Already clicked, ignoring');
+                    return;
+                }
+                this.reviewModalClicked = true;
+                console.log('✅ Processing reject click');
+                
+                // Close modal immediately
+                reviewModal.remove();
+                if (style && style.parentNode) {
+                    style.remove();
+                }
+                
+                // Update the current payment status
+                this.currentPayment.riskStatus = 'BLOCK';
+                this.currentPayment.riskLevel = 'BLOCK';
+                this.currentPayment.finalStatus = 'BLOCK';
+                
                 this.showMessage('Payment rejected after manual review - Status: BLOCK', 'error');
                 this.updateStats(0, false, 'BLOCK');
                 this.updateIbanStatusDisplay('BLOCK', 'BLOCK');
@@ -805,34 +832,8 @@ class PaymentFraudDetectionApp {
                 });
 
                 this.loadRecentValidations();
-            }
-        };
-        
-        // Use event delegation with improved state management
-        reviewModal.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            console.log('Modal clicked, target:', e.target, 'target id:', e.target.id);
-            
-            if (e.target.id === 'approveBtn') {
-                // Close modal immediately
-                reviewModal.remove();
-                if (style && style.parentNode) {
-                    style.remove();
-                }
-                // Then handle the action
-                handleButtonAction('Approve');
-            } else if (e.target.id === 'rejectBtn') {
-                // Close modal immediately
-                reviewModal.remove();
-                if (style && style.parentNode) {
-                    style.remove();
-                }
-                // Then handle the action
-                handleButtonAction('Reject');
-            }
-        });
+            });
+        }
     }
 
     showBlockedPaymentDetails(result) {
