@@ -80,7 +80,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 95%;
     margin: 0 auto;
     padding: 0 1rem;
 }
@@ -399,7 +399,6 @@ body:not(:has(.dashboard)) .main-content {
     border: 1px solid var(--gray-200);
     margin-bottom: 2rem;
     width: 100%;
-    max-width: 1200px;
 }
 
 .dashboard-header {
