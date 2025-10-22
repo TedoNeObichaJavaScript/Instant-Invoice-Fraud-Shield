@@ -105,22 +105,18 @@ class PaymentFraudDetectionApp {
     }
 
     checkAuthStatus() {
-        // For testing purposes, always show dashboard (authentication disabled)
-        this.authToken = 'test-token'; // Set a dummy token for testing
-        this.currentUser = 'Test User';
-        this.showDashboard();
+        // Clear any existing tokens for testing
+        localStorage.removeItem('fraudShieldToken');
+        localStorage.removeItem('fraudShieldUser');
         
-        // Check if user is already logged in (in a real app, this would check localStorage or cookies)
-        // For demo purposes, we'll start logged out
-        const savedToken = localStorage.getItem('fraudShieldToken');
-        if (savedToken) {
-            this.authToken = savedToken;
-            this.currentUser = localStorage.getItem('fraudShieldUser') || 'User';
-            this.showDashboard();
-        } else {
-            // For testing, show dashboard even without token
-            this.showDashboard();
-        }
+        // Always show login form first
+        this.showLoginForm();
+    }
+
+    showLoginForm() {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'none';
     }
 
     showDashboard() {
