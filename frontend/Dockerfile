@@ -15,7 +15,7 @@ LABEL maintainer="FinLab Challenge - Instant Invoice: Fraud Shield"
 LABEL description="Frontend + Nginx Reverse Proxy with TLS for supplier payment fraud detection"
 
 # Install required packages
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl curl
 
 # Copy SSL certificates from previous stage
 COPY --from=ssl-generator /ssl/server.crt /etc/nginx/ssl/
@@ -46,7 +46,7 @@ EXPOSE 80 443
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
+    CMD curl -f http://localhost/health || exit 1
 
 # Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
