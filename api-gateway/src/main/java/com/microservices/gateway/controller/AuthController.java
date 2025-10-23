@@ -4,6 +4,7 @@ import com.microservices.gateway.model.LoginRequest;
 import com.microservices.gateway.model.User;
 import com.microservices.gateway.service.AuditService;
 import com.microservices.gateway.service.JwtService;
+import com.microservices.gateway.service.SqlInjectionProtectionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -20,10 +21,12 @@ public class AuthController {
 
     private final JwtService jwtService;
     private final AuditService auditService;
+    private final SqlInjectionProtectionService sqlInjectionProtection;
 
-    public AuthController(JwtService jwtService, AuditService auditService) {
+    public AuthController(JwtService jwtService, AuditService auditService, SqlInjectionProtectionService sqlInjectionProtection) {
         this.jwtService = jwtService;
         this.auditService = auditService;
+        this.sqlInjectionProtection = sqlInjectionProtection;
     }
 
     @PostMapping("/login")
@@ -47,6 +50,21 @@ public class AuthController {
         // Sanitize inputs
         String username = loginRequest.getUsername().trim();
         String password = loginRequest.getPassword();
+        
+        // SQL injection protection
+        if (!sqlInjectionProtection.isValidUsername(username)) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Invalid username format");
+            sqlInjectionProtection.logSecurityEvent("SQL_INJECTION_ATTEMPT", "Invalid username: " + username);
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        if (!sqlInjectionProtection.isValidPassword(password)) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Invalid password format");
+            sqlInjectionProtection.logSecurityEvent("SQL_INJECTION_ATTEMPT", "Invalid password format");
+            return ResponseEntity.badRequest().body(response);
+        }
         
         // Additional validation
         if (username.length() < 3 || username.length() > 20) {

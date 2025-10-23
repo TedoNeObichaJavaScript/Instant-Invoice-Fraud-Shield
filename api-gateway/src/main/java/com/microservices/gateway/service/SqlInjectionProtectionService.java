@@ -1,4 +1,4 @@
-package com.microservices.accounts.service;
+package com.microservices.gateway.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * SQL Injection Protection Service
+ * SQL Injection Protection Service for API Gateway
  * Provides comprehensive protection against SQL injection attacks
  */
 @Service
@@ -214,84 +214,40 @@ public class SqlInjectionProtectionService {
     }
 
     /**
-     * Validates IBAN format and content
-     * @param iban The IBAN to validate
-     * @return true if IBAN is valid and safe
+     * Validates username format to prevent injection
+     * @param username The username to validate
+     * @return true if username is valid and safe
      */
-    public boolean isValidIban(String iban) {
-        if (!StringUtils.hasText(iban)) {
+    public boolean isValidUsername(String username) {
+        if (!StringUtils.hasText(username)) {
             return false;
         }
 
-        // Check for SQL injection first
-        if (!isInputSafe(iban)) {
+        // Username should be 3-20 characters, alphanumeric and underscore only
+        if (!username.matches("^[a-zA-Z0-9_]{3,20}$")) {
             return false;
         }
 
-        // Basic IBAN format validation (2 letters + 2 digits + up to 30 alphanumeric)
-        return iban.matches("^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$");
+        // Check for SQL injection patterns
+        return isInputSafe(username);
     }
 
     /**
-     * Validates invoice number format and content
-     * @param invoiceNumber The invoice number to validate
-     * @return true if invoice number is valid and safe
+     * Validates password format to prevent injection
+     * @param password The password to validate
+     * @return true if password is valid and safe
      */
-    public boolean isValidInvoiceNumber(String invoiceNumber) {
-        if (!StringUtils.hasText(invoiceNumber)) {
+    public boolean isValidPassword(String password) {
+        if (!StringUtils.hasText(password)) {
             return false;
         }
 
-        // Check for SQL injection first
-        if (!isInputSafe(invoiceNumber)) {
+        // Password should be 6-128 characters
+        if (password.length() < 6 || password.length() > 128) {
             return false;
         }
 
-        // Invoice number should be alphanumeric with common separators
-        return invoiceNumber.matches("^[A-Za-z0-9\\-_/]{1,50}$");
-    }
-
-    /**
-     * Validates supplier name format and content
-     * @param supplierName The supplier name to validate
-     * @return true if supplier name is valid and safe
-     */
-    public boolean isValidSupplierName(String supplierName) {
-        if (!StringUtils.hasText(supplierName)) {
-            return false;
-        }
-
-        // Check for SQL injection first
-        if (!isInputSafe(supplierName)) {
-            return false;
-        }
-
-        // Supplier name should contain only letters, numbers, spaces, and common punctuation
-        return supplierName.matches("^[A-Za-z0-9\\s\\-\\.,&()]{1,100}$");
-    }
-
-    /**
-     * Validates payment amount
-     * @param amount The payment amount to validate
-     * @return true if amount is valid
-     */
-    public boolean isValidPaymentAmount(Double amount) {
-        if (amount == null) {
-            return false;
-        }
-
-        // Amount should be positive and reasonable (not too large)
-        return amount > 0 && amount <= 1000000; // Max 1 million
-    }
-
-    /**
-     * Logs security events for monitoring
-     * @param event The security event description
-     * @param input The suspicious input that triggered the event
-     */
-    public void logSecurityEvent(String event, String input) {
-        // In a real application, this would log to a security monitoring system
-        System.err.println("SECURITY ALERT: " + event + " - Input: " + 
-            (input != null ? input.substring(0, Math.min(input.length(), 100)) : "null"));
+        // Check for SQL injection patterns
+        return isInputSafe(password);
     }
 }

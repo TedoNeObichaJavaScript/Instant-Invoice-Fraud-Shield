@@ -5,6 +5,7 @@ import com.microservices.gateway.model.FraudDetectionResponse;
 import com.microservices.gateway.service.FraudDetectionService;
 import com.microservices.gateway.service.AuditService;
 import com.microservices.gateway.service.JwtService;
+import com.microservices.gateway.service.SqlInjectionProtectionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,15 +26,18 @@ public class FraudDetectionController {
     private final JwtService jwtService;
     private final AuditService auditService;
     private final JdbcTemplate jdbcTemplate;
+    private final SqlInjectionProtectionService sqlInjectionProtection;
 
     public FraudDetectionController(FraudDetectionService fraudDetectionService,
                                   JwtService jwtService,
                                   AuditService auditService,
-                                  JdbcTemplate jdbcTemplate) {
+                                  JdbcTemplate jdbcTemplate,
+                                  SqlInjectionProtectionService sqlInjectionProtection) {
         this.fraudDetectionService = fraudDetectionService;
         this.jwtService = jwtService;
         this.auditService = auditService;
         this.jdbcTemplate = jdbcTemplate;
+        this.sqlInjectionProtection = sqlInjectionProtection;
     }
 
     /**
@@ -52,6 +56,29 @@ public class FraudDetectionController {
         int responseStatus = 500;
 
         try {
+            // SQL injection protection for request data
+            if (request.getSupplierIban() != null && !sqlInjectionProtection.isValidIban(request.getSupplierIban())) {
+                responseStatus = 400;
+                response = FraudDetectionResponse.builder()
+                    .invoiceId(request.getInvoiceId())
+                    .riskStatus("ERROR")
+                    .reason("Invalid IBAN format")
+                    .build();
+                sqlInjectionProtection.logSecurityEvent("SQL_INJECTION_ATTEMPT", "Invalid IBAN: " + request.getSupplierIban());
+                return ResponseEntity.status(responseStatus).body(response);
+            }
+            
+            if (request.getSupplierName() != null && !sqlInjectionProtection.isInputSafe(request.getSupplierName())) {
+                responseStatus = 400;
+                response = FraudDetectionResponse.builder()
+                    .invoiceId(request.getInvoiceId())
+                    .riskStatus("ERROR")
+                    .reason("Invalid supplier name format")
+                    .build();
+                sqlInjectionProtection.logSecurityEvent("SQL_INJECTION_ATTEMPT", "Invalid supplier name: " + request.getSupplierName());
+                return ResponseEntity.status(responseStatus).body(response);
+            }
+
             // Validate JWT token if provided
             if (authHeader != null && !authHeader.isEmpty()) {
                 String token = extractTokenFromHeader(authHeader);
@@ -140,6 +167,19 @@ public class FraudDetectionController {
         int responseStatus = 500;
 
         try {
+            // Input validation and SQL injection protection
+            if (count < 1) {
+                responseStatus = 400;
+                response.put("error", "Count must be at least 1");
+                return ResponseEntity.status(responseStatus).body(response);
+            }
+            
+            if (count > 5) {
+                responseStatus = 400;
+                response.put("error", "Count cannot exceed 5");
+                return ResponseEntity.status(responseStatus).body(response);
+            }
+
             // Validate JWT token if provided (optional for testing)
             if (authHeader != null && !authHeader.isEmpty()) {
                 String token = extractTokenFromHeader(authHeader);
@@ -149,11 +189,6 @@ public class FraudDetectionController {
                     return ResponseEntity.status(responseStatus).body(response);
                 }
                 userId = jwtService.getUserIdFromToken(token);
-            }
-
-            // Limit count to prevent abuse
-            if (count > 5) {
-                count = 5;
             }
 
             List<Map<String, Object>> payments = new ArrayList<>();
@@ -227,6 +262,19 @@ public class FraudDetectionController {
         int responseStatus = 500;
 
         try {
+            // Input validation and SQL injection protection
+            if (count < 1) {
+                responseStatus = 400;
+                response.put("error", "Count must be at least 1");
+                return ResponseEntity.status(responseStatus).body(response);
+            }
+            
+            if (count > 10) {
+                responseStatus = 400;
+                response.put("error", "Count cannot exceed 10");
+                return ResponseEntity.status(responseStatus).body(response);
+            }
+
             // Validate JWT token if provided (optional for testing)
             if (authHeader != null && !authHeader.isEmpty()) {
                 String token = extractTokenFromHeader(authHeader);
@@ -239,11 +287,6 @@ public class FraudDetectionController {
             } else {
                 // For testing purposes, allow unauthenticated access
                 userId = null;
-            }
-
-            // Limit count to prevent abuse
-            if (count > 10) {
-                count = 10;
             }
 
             // Get random IBANs from database with their risk levels for realistic testing
