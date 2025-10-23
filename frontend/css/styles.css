@@ -1912,23 +1912,27 @@ body:has(.modern-login-container) .footer {
 }
 
 .status-unknown {
-    color: var(--gray-500);
-    font-style: italic;
+    color: var(--gray-500) !important;
+    font-style: italic !important;
+    font-family: inherit !important;
 }
 
 .status-allow {
-    color: var(--success-600);
-    font-weight: 600;
+    color: var(--success-600) !important;
+    font-weight: 600 !important;
+    font-family: inherit !important;
 }
 
 .status-review {
-    color: var(--warning-600);
-    font-weight: 600;
+    color: var(--warning-600) !important;
+    font-weight: 600 !important;
+    font-family: inherit !important;
 }
 
 .status-block {
-    color: var(--danger-600);
-    font-weight: 600;
+    color: var(--danger-600) !important;
+    font-weight: 600 !important;
+    font-family: inherit !important;
 }
 
 /* Blocked Payments Section */

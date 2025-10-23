@@ -452,7 +452,14 @@ class PaymentFraudDetectionApp {
             statusElement.textContent = status;
             // Remove all existing status classes and add the new one
             statusElement.className = statusElement.className.replace(/status-\w+/g, '');
-            statusElement.className += ` status-${status.toLowerCase().replace(/\s+/g, '-')}`;
+            
+            // Map status text to CSS class names
+            let statusClass = status.toLowerCase().replace(/\s+/g, '-');
+            if (statusClass === 'blocked') {
+                statusClass = 'block'; // Map 'blocked' to 'block' CSS class
+            }
+            
+            statusElement.className += ` status-${statusClass}`;
             console.log('Updated status element:', statusElement.textContent, statusElement.className);
         }
     }
@@ -649,8 +656,8 @@ class PaymentFraudDetectionApp {
             
             const responseTime = Date.now() - startTime;
             
-            // Update IBAN status display to show "Blocked" status
-            this.updateIbanStatusDisplay(rejectionResult.riskLevel, 'Blocked');
+            // Update IBAN status display to show "BLOCK" status
+            this.updateIbanStatusDisplay(rejectionResult.riskLevel, 'BLOCK');
             
             this.showMessage(`Payment rejected and blocked in ${responseTime}ms`, 'error');
             
