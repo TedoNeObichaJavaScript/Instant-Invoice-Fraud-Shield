@@ -451,6 +451,11 @@ class PaymentFraudDetectionApp {
     }
 
     async validatePayment() {
+        console.log('=== VALIDATE PAYMENT CALLED ===');
+        console.log('Current payment:', this.currentPayment);
+        console.log('Current payment riskStatus:', this.currentPayment?.riskStatus);
+        console.log('Current payment validationUsed:', this.currentPayment?.validationUsed);
+        
         if (!this.currentPayment) {
             this.showMessage('No payment to validate. Please generate a payment first.', 'error');
             return;
@@ -459,6 +464,13 @@ class PaymentFraudDetectionApp {
         // Check if validation has already been used for this payment
         if (this.currentPayment.validationUsed) {
             this.showMessage('Payment already validated. Generate a new payment to validate again.', 'warning');
+            return;
+        }
+
+        // Check if payment is in REVIEW status - don't allow manual validation
+        if (this.currentPayment.riskStatus === 'REVIEW') {
+            console.log('❌ Payment is in REVIEW status, blocking manual validation');
+            this.showMessage('Payment is under review. Please wait for the review decision.', 'warning');
             return;
         }
 
@@ -549,19 +561,40 @@ class PaymentFraudDetectionApp {
                 
                 this.updateStats(responseTime, true, result.riskStatus);
                 
+                // Update current payment with fraud check result
+                this.currentPayment.riskStatus = result.riskStatus;
+                this.currentPayment.riskLevel = result.riskLevel;
+                
                 // Update IBAN status display based on fraud check result
                 this.updateIbanStatusDisplay(result.riskLevel, result.riskStatus);
                 
-                // Save to recent validations
-                this.saveValidation({
-                    ...this.currentPayment,
-                    result: result,
-                    responseTime: responseTime,
-                    timestamp: new Date().toISOString(),
-                    validationType: 'fraud_check'
-                });
+                // Save to recent validations (EXCEPT REVIEW entries - they'll be saved when user decides)
+                console.log('=== FRAUD CHECK RESULT ===');
+                console.log('Result riskStatus:', result.riskStatus);
+                console.log('Result riskLevel:', result.riskLevel);
+                console.log('Updated currentPayment.riskStatus to:', this.currentPayment.riskStatus);
                 
-                this.loadRecentValidations();
+                if (result.riskStatus === 'REVIEW') {
+                    console.log('🚫 REVIEW payment - FORBIDDEN from recent validations');
+                    console.log('REVIEW payments will NEVER be saved to recent validations');
+                    console.log('Only final decisions (ALLOWED/BLOCKED) will be saved');
+                } else {
+                    console.log('✅ Saving non-REVIEW result to recent validations');
+                    this.saveValidation({
+                        ...this.currentPayment,
+                        result: result,
+                        responseTime: responseTime,
+                        timestamp: new Date().toISOString(),
+                        validationType: 'fraud_check'
+                    });
+                }
+                
+                // Only load recent validations if we didn't just process a REVIEW payment
+                if (result.riskStatus !== 'REVIEW') {
+                    this.loadRecentValidations();
+                } else {
+                    console.log('🚫 Skipping loadRecentValidations for REVIEW payment');
+                }
             } else {
                 const error = await response.json();
                 this.showMessage(`Fraud check failed: ${error.reason || 'Unknown error'}`, 'error');
@@ -841,7 +874,11 @@ class PaymentFraudDetectionApp {
                 if (riskLevelElement) riskLevelElement.textContent = 'GOOD';
                 if (riskStatusElement) riskStatusElement.className = 'fraud-status allow';
 
-                // Save to recent validations
+                // REFACTORED: Simple approve logic
+                console.log('=== APPROVE BUTTON - REFACTORED LOGIC ===');
+                console.log('Saving ALLOWED payment to recent validations');
+                
+                // Simply save the final decision
                 this.saveValidation({
                     ...this.currentPayment,
                     result: {
@@ -854,8 +891,9 @@ class PaymentFraudDetectionApp {
                     timestamp: new Date().toISOString(),
                     validationType: 'manual_review'
                 });
-
-                this.loadRecentValidations();
+                
+                console.log('✅ ALLOWED payment saved successfully');
+                this.updateRecentValidationsDisplay();
             });
         }
         
@@ -894,7 +932,11 @@ class PaymentFraudDetectionApp {
                 if (riskLevelElement) riskLevelElement.textContent = 'BLOCK';
                 if (riskStatusElement) riskStatusElement.className = 'fraud-status block';
 
-                // Save to recent validations
+                // REFACTORED: Simple reject logic
+                console.log('=== REJECT BUTTON - REFACTORED LOGIC ===');
+                console.log('Saving BLOCKED payment to recent validations');
+                
+                // Simply save the final decision
                 this.saveValidation({
                     ...this.currentPayment,
                     result: {
@@ -907,11 +949,13 @@ class PaymentFraudDetectionApp {
                     timestamp: new Date().toISOString(),
                     validationType: 'manual_review'
                 });
-
-                this.loadRecentValidations();
+                
+                console.log('✅ BLOCKED payment saved successfully');
+                this.updateRecentValidationsDisplay();
             });
         }
     }
+
 
     showBlockedPaymentDetails(result) {
         // Prevent duplicate blocked payment details using flag
@@ -1023,6 +1067,20 @@ class PaymentFraudDetectionApp {
         const saved = localStorage.getItem('fraudShieldValidations');
         if (saved) {
             this.validations = JSON.parse(saved);
+        }
+        
+        // FILTER OUT ALL REVIEW ENTRIES - they should never be in recent validations
+        const beforeCount = this.validations.length;
+        this.validations = this.validations.filter(validation => {
+            const riskStatus = validation.result?.riskStatus;
+            return riskStatus !== 'REVIEW';
+        });
+        const afterCount = this.validations.length;
+        
+        if (beforeCount !== afterCount) {
+            console.log(`🧹 Cleaned up ${beforeCount - afterCount} REVIEW entries from recent validations`);
+            // Save the cleaned validations back to localStorage
+            localStorage.setItem('fraudShieldValidations', JSON.stringify(this.validations));
         }
         
         // Update the recent validations display
@@ -1142,8 +1200,12 @@ class PaymentFraudDetectionApp {
     getRiskStatusClass(riskStatus) {
         switch (riskStatus) {
             case 'ALLOW': return 'allow';
+            case 'ALLOWED': return 'allow';
             case 'REVIEW': return 'review';
             case 'BLOCK': return 'block';
+            case 'BLOCKED': return 'block';
+            case 'REVIEW/ALLOWED': return 'review-allowed';
+            case 'REVIEW/BLOCKED': return 'review-blocked';
             default: return 'unknown';
         }
     }
@@ -1151,13 +1213,26 @@ class PaymentFraudDetectionApp {
     formatRiskStatus(riskStatus) {
         switch (riskStatus) {
             case 'ALLOW': return 'ALLOWED';
+            case 'ALLOWED': return 'ALLOWED';
             case 'REVIEW': return 'REVIEW';
             case 'BLOCK': return 'BLOCKED';
+            case 'BLOCKED': return 'BLOCKED';
+            case 'REVIEW/ALLOWED': return 'REVIEW/ALLOWED';
+            case 'REVIEW/BLOCKED': return 'REVIEW/BLOCKED';
             default: return 'UNKNOWN';
         }
     }
 
+    // REFACTORED: Removed complex methods - using simple approach now
+
     saveValidation(validation) {
+        // BLOCK REVIEW PAYMENTS FROM BEING SAVED
+        if (validation.result?.riskStatus === 'REVIEW') {
+            console.log('🚫 BLOCKING REVIEW payment from being saved');
+            console.log('REVIEW payments are FORBIDDEN from recent validations');
+            return;
+        }
+        
         // Prevent duplicate validations if one is already in progress
         if (this.validationInProgress) {
             console.log('Validation already in progress, skipping duplicate save');
@@ -1173,6 +1248,11 @@ class PaymentFraudDetectionApp {
             v.validationType === validation.validationType &&
             Math.abs(new Date(v.timestamp) - new Date(validation.timestamp)) < 1000 // Within 1 second
         );
+        
+        console.log('=== SAVE VALIDATION DEBUG ===');
+        console.log('Validation to save:', validation);
+        console.log('Existing validation found:', existingValidation);
+        console.log('Will skip save?', !!existingValidation);
         
         if (existingValidation) {
             console.log('Duplicate validation detected, skipping save:', validationId);
@@ -1610,7 +1690,7 @@ class PaymentFraudDetectionApp {
 
 
 
-
+ok
     calculateAverageResponseTime() {
         // Calculate average response time from recent validations
         if (this.validations.length === 0) {
@@ -1633,7 +1713,7 @@ class PaymentFraudDetectionApp {
         
         const recentValidations = this.validations.slice(-20); // Last 20 validations
         const successfulValidations = recentValidations.filter(validation => {
-            return validation.riskStatus === 'GOOD' || validation.riskStatus === 'REVIEW';
+            return validation.result?.riskStatus === 'ALLOW';
         });
         
         return Math.round((successfulValidations.length / recentValidations.length) * 100);
