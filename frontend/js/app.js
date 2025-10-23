@@ -44,9 +44,6 @@ class PaymentFraudDetectionApp {
         this.setupAnimations();
         this.initializeCharts();
         this.startRealTimeUpdates();
-        this.setupChartDebugButtons();
-        // Force show charts immediately as fallback
-        setTimeout(() => this.forceShowCharts(), 2000);
     }
 
     setupEventListeners() {
@@ -1611,52 +1608,8 @@ class PaymentFraudDetectionApp {
         }
     }
 
-    setupChartDebugButtons() {
-        console.log('Setting up chart debug buttons...');
-        // Add debug buttons to force show charts
-        setTimeout(() => {
-            const analyticsSection = document.querySelector('.analytics-sidebar');
-            if (analyticsSection) {
-                const debugDiv = document.createElement('div');
-                debugDiv.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 1000;';
-                debugDiv.innerHTML = `
-                    <button onclick="window.paymentApp.forceShowCharts()" style="background: #3b82f6; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; margin: 2px;">Show Charts</button>
-                    <button onclick="window.paymentApp.debugCharts()" style="background: #10b981; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; margin: 2px;">Debug</button>
-                `;
-                analyticsSection.style.position = 'relative';
-                analyticsSection.appendChild(debugDiv);
-                console.log('Debug buttons added to analytics sidebar');
-            } else {
-                console.error('Analytics sidebar not found!');
-                // Force show charts anyway
-                this.forceShowCharts();
-            }
-        }, 1000);
-    }
 
-    forceShowCharts() {
-        console.log('Force showing charts...');
-        this.createSimpleFallbackCharts();
-        
-        // Also try to create real charts
-        setTimeout(async () => {
-            await this.createRiskDistributionChart();
-            await this.createTrendsChart();
-            await this.createResponseTimeChart();
-            await this.createSystemHealthChart();
-        }, 100);
-    }
 
-    debugCharts() {
-        console.log('=== CHART DEBUG INFO ===');
-        console.log('Chart.js loaded:', typeof Chart !== 'undefined');
-        console.log('Risk chart canvas:', document.getElementById('riskDistributionChart'));
-        console.log('Trends chart canvas:', document.getElementById('trendsChart'));
-        console.log('Response time chart canvas:', document.getElementById('responseTimeChart'));
-        console.log('System health chart canvas:', document.getElementById('systemHealthChart'));
-        console.log('Current charts object:', this.charts);
-        console.log('========================');
-    }
 
     calculateAverageResponseTime() {
         // Calculate average response time from recent validations
