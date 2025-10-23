@@ -1,0 +1,11 @@
+username,password,rememberMe
+admin,admin123,false
+testuser,testpass123,true
+user1,password1,false
+user2,password2,true
+user3,password3,false
+invaliduser,wrongpass,false
+test,test,false
+demo,demo123,true
+sample,sample123,false
+guest,guest123,true
