@@ -716,6 +716,150 @@ docker stats
 - Threat pattern analysis
 - Audit trail maintenance
 
+## 🚀 Stress Testing with JMeter
+
+The project includes comprehensive stress testing capabilities using Apache JMeter in a Docker container.
+
+### **Test Scenarios**
+
+#### **Normal Load Test**
+- **Users**: 50 concurrent users
+- **Iterations**: 10 iterations per user
+- **Total Requests**: 500 requests
+- **Duration**: ~5 minutes
+- **Target Response Time**: <200ms
+- **Expected Error Rate**: <5%
+
+#### **Extreme Load Test**
+- **Users**: 200 concurrent users
+- **Iterations**: 20 iterations per user
+- **Duration**: 5 minutes (scheduled)
+- **Total Requests**: 4000+ requests
+- **Target Response Time**: <200ms
+- **Expected Error Rate**: <10%
+
+### **Running Stress Tests**
+
+#### **Method 1: Docker Compose (Recommended)**
+```bash
+# Start all services including JMeter
+docker-compose --profile testing up --build -d
+
+# Run comprehensive test
+docker exec microservices-jmeter jmeter -n -t /tests/test-plans/comprehensive-test.jmx -l /tests/results/comprehensive-results.jtl -e -o /tests/results/comprehensive-report
+
+# Run normal load test
+docker exec microservices-jmeter jmeter -n -t /tests/test-plans/normal-load-test.jmx -l /tests/results/normal-load-results.jtl -e -o /tests/results/normal-load-report
+
+# Run extreme load test
+docker exec microservices-jmeter jmeter -n -t /tests/test-plans/extreme-load-test.jmx -l /tests/results/extreme-load-results.jtl -e -o /tests/results/extreme-load-report
+```
+
+#### **Method 2: PowerShell Script (Windows)**
+```powershell
+# Run all stress tests automatically
+.\stress_tests\run-stress-tests.ps1
+```
+
+#### **Method 3: Manual JMeter Container**
+```bash
+# Build JMeter container
+docker build -t fraud-shield-jmeter ./stress_tests
+
+# Run specific test
+docker run --rm --network instant-invoice-fraud-shield_microservices-network \
+  -v "${PWD}/stress_tests/results:/tests/results" \
+  fraud-shield-jmeter \
+  jmeter -n -t /tests/test-plans/normal-load-test.jmx \
+  -l /tests/results/normal-load-results.jtl \
+  -e -o /tests/results/normal-load-report
+```
+
+### **Test Plan Features**
+
+#### **Authentication Flow**
+- Automatic JWT token extraction from login response
+- Token reuse across all authenticated requests
+- Proper Authorization header management
+
+#### **Realistic Test Data**
+- Dynamic invoice IDs with thread numbers
+- Random payment amounts (100-50000)
+- Valid IBAN format (BG11BANK99991234567890)
+- Unique supplier names per thread
+
+#### **Performance Assertions**
+- **Response Time**: <200ms for fraud detection API
+- **Response Time**: <100ms for health checks
+- **Success Rate**: >95% for normal load
+- **Success Rate**: >90% for extreme load
+- **HTTP Status**: 200 OK for all requests
+
+#### **Test Endpoints**
+- **Authentication**: `/api/auth/login`
+- **Fraud Detection**: `/api/v1/fraud-detection/validate-payment`
+- **Health Check**: `/actuator/health`
+
+### **Results and Reports**
+
+#### **Output Files**
+- **JTL Files**: Raw test results (`.jtl`)
+- **HTML Reports**: Interactive dashboard (`.html`)
+- **Summary Reports**: Performance metrics
+- **Log Files**: Detailed execution logs
+
+#### **Report Location**
+```
+stress_tests/results/
+├── comprehensive-test-summary.jtl
+├── comprehensive-report/
+│   ├── index.html
+│   ├── statistics.json
+│   └── ...
+├── normal-load-test-summary.jtl
+├── normal-load-report/
+├── extreme-load-test-summary.jtl
+└── extreme-load-report/
+```
+
+#### **Key Metrics**
+- **Throughput**: Requests per second
+- **Response Time**: Average, min, max, 90th percentile
+- **Error Rate**: Percentage of failed requests
+- **Active Threads**: Concurrent user simulation
+- **Latency**: Network and processing delays
+
+### **Performance Thresholds**
+
+| Metric | Normal Load | Extreme Load |
+|--------|------------|--------------|
+| Response Time | <200ms | <200ms |
+| Error Rate | <5% | <10% |
+| Throughput | >50 req/s | >100 req/s |
+| 90th Percentile | <300ms | <500ms |
+
+### **Troubleshooting**
+
+#### **Common Issues**
+- **Authentication Failures**: Check JWT token extraction
+- **Connection Refused**: Verify API Gateway is running
+- **High Error Rates**: Check database connection pool
+- **Memory Issues**: Adjust JMeter heap size
+
+#### **Debug Commands**
+```bash
+# Check container logs
+docker logs microservices-jmeter
+
+# Verify network connectivity
+docker exec microservices-jmeter ping microservices-api-gateway
+
+# Test authentication manually
+docker exec microservices-jmeter curl -X POST http://microservices-api-gateway:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+```
+
 ## 🤝 Contributing
 
 1. Fork the repository
