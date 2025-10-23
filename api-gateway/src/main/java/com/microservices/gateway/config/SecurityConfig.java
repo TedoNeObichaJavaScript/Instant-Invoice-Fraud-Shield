@@ -40,6 +40,7 @@ public class SecurityConfig {
                     .requestMatchers("/actuator/**").permitAll()
                     .requestMatchers("/api/v1/fraud-detection/health").permitAll()
                     .requestMatchers("/api/v1/fraud-detection/**").permitAll()
+                    .requestMatchers("/api/v1/analytics/**").permitAll()
                     .requestMatchers("/api/v1/**").authenticated()
                 .anyRequest().permitAll()
             )

@@ -115,26 +115,101 @@ public class FraudDetectionController {
     }
 
     /**
+     * Analyze a payment for fraud detection (alias for validate-payment)
+     */
+    @PostMapping("/analyze")
+    public ResponseEntity<FraudDetectionResponse> analyzePayment(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @Valid @RequestBody FraudDetectionRequest request,
+            HttpServletRequest httpRequest) {
+        return validatePayment(authHeader, request, httpRequest);
+    }
+
+    /**
+     * Generate sample payment data for testing
+     */
+    @PostMapping("/generate-payment")
+    public ResponseEntity<Map<String, Object>> generatePayment(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam(defaultValue = "1") int count,
+            HttpServletRequest httpRequest) {
+        
+        long startTime = System.currentTimeMillis();
+        UUID userId = null;
+        Map<String, Object> response = new HashMap<>();
+        int responseStatus = 500;
+
+        try {
+            // Validate JWT token if provided (optional for testing)
+            if (authHeader != null && !authHeader.isEmpty()) {
+                String token = extractTokenFromHeader(authHeader);
+                if (!jwtService.validateToken(token)) {
+                    responseStatus = 401;
+                    response.put("error", "Invalid or expired authentication token");
+                    return ResponseEntity.status(responseStatus).body(response);
+                }
+                userId = jwtService.getUserIdFromToken(token);
+            }
+
+            // Limit count to prevent abuse
+            if (count > 5) {
+                count = 5;
+            }
+
+            List<Map<String, Object>> payments = new ArrayList<>();
+            
+            // Get random IBANs with risk levels
+            String sql = "SELECT iban, risk_level FROM risk.iban_risk_lookup ORDER BY RANDOM() LIMIT ?";
+            List<Map<String, Object>> ibanData = jdbcTemplate.queryForList(sql, count);
+            
+            for (Map<String, Object> row : ibanData) {
+                Map<String, Object> payment = new HashMap<>();
+                payment.put("invoiceId", "INV-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 1000));
+                payment.put("supplierName", "Test Supplier " + (int)(Math.random() * 100));
+                payment.put("amount", Math.round((Math.random() * 10000 + 100) * 100.0) / 100.0);
+                payment.put("iban", row.get("iban"));
+                payment.put("description", "Generated test payment");
+                payment.put("riskLevel", row.get("risk_level"));
+                payments.add(payment);
+            }
+
+            response.put("payments", payments);
+            response.put("count", payments.size());
+            responseStatus = 200;
+
+            // Log the request
+            auditService.logRequest(userId, httpRequest.getRequestURI(), "POST", 
+                getClientIpAddress(httpRequest), httpRequest.getHeader("User-Agent"), 
+                "count=" + count, responseStatus, (int)(System.currentTimeMillis() - startTime));
+
+        } catch (IllegalArgumentException e) {
+            responseStatus = 401;
+            response.put("error", "Invalid authorization header");
+        } catch (Exception e) {
+            responseStatus = 500;
+            response.put("error", "Internal server error: " + e.getMessage());
+        }
+
+        return ResponseEntity.status(responseStatus).body(response);
+    }
+
+    /**
+     * Validate a payment (alias for validate-payment)
+     */
+    @PostMapping("/validate")
+    public ResponseEntity<FraudDetectionResponse> validate(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @Valid @RequestBody FraudDetectionRequest request,
+            HttpServletRequest httpRequest) {
+        return validatePayment(authHeader, request, httpRequest);
+    }
+
+    /**
      * Health check endpoint for the fraud detection service
      */
     @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("{\"status\": \"UP\", \"service\": \"fraud-detection\"}");
-    }
-
-    private String extractTokenFromHeader(String authHeader) {
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
-        }
-        throw new IllegalArgumentException("Invalid authorization header");
-    }
-
-    private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 
     /**
@@ -202,5 +277,20 @@ public class FraudDetectionController {
         }
 
         return ResponseEntity.status(responseStatus).body(response);
+    }
+
+    private String extractTokenFromHeader(String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        throw new IllegalArgumentException("Invalid authorization header");
+    }
+
+    private String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }
