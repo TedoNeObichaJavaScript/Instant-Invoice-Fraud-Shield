@@ -1,12 +1,18 @@
 // Instant Invoice: Fraud Shield - Payment Generation and Validation System
 class PaymentFraudDetectionApp {
     constructor() {
-        this.apiBaseUrl = '/api';
+        // Use HTTPS in production, HTTP for local development
+        const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+        const host = window.location.hostname;
+        const port = window.location.port ? `:${window.location.port}` : '';
+        this.apiBaseUrl = `${protocol}//${host}${port}/api`;
         this.authToken = null;
         this.currentUser = null;
         this.currentPayment = null;
         this.validations = [];
         this.messageQueue = []; // Track last 3 messages
+        this.isGenerating = false; // Add throttling flag
+        this.lastGenerateTime = 0; // Track last generation time
         this.stats = {
             totalPayments: 0,
             fraudDetected: 0,
@@ -87,12 +93,55 @@ class PaymentFraudDetectionApp {
         }
     }
 
+    // Input validation and sanitization
+    sanitizeInput(input) {
+        if (typeof input !== 'string') return '';
+        return input.trim().replace(/[<>\"'&]/g, function(match) {
+            const escape = {
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#x27;',
+                '&': '&amp;'
+            };
+            return escape[match];
+        });
+    }
+
+    validateInput(input, type) {
+        if (!input || typeof input !== 'string') return false;
+        
+        switch (type) {
+            case 'username':
+                return /^[a-zA-Z0-9_]{3,20}$/.test(input);
+            case 'password':
+                return input.length >= 6 && input.length <= 128;
+            case 'iban':
+                return /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(input);
+            case 'amount':
+                return /^\d+(\.\d{1,2})?$/.test(input) && parseFloat(input) > 0;
+            default:
+                return true;
+        }
+    }
+
     async handleLogin(e) {
         e.preventDefault();
         
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+        const username = this.sanitizeInput(document.getElementById('username').value);
+        const password = this.sanitizeInput(document.getElementById('password').value);
         const rememberMe = document.getElementById('rememberMe').checked;
+        
+        // Input validation
+        if (!this.validateInput(username, 'username')) {
+            this.showMessage('Invalid username format. Use 3-20 alphanumeric characters.', 'error');
+            return;
+        }
+        
+        if (!this.validateInput(password, 'password')) {
+            this.showMessage('Invalid password. Must be 6-128 characters.', 'error');
+            return;
+        }
         
         try {
             const response = await fetch(`${this.apiBaseUrl}/auth/login`, {
@@ -116,10 +165,14 @@ class PaymentFraudDetectionApp {
                 this.showMessage('Login successful!', 'success');
             } else {
                 const error = await response.json();
-                this.showMessage(error.message || 'Login failed', 'error');
+                // Sanitize error message to prevent XSS
+                const errorMessage = this.sanitizeInput(error.message || 'Login failed');
+                this.showMessage(errorMessage, 'error');
             }
         } catch (error) {
-            this.showMessage('Network error. Please try again.', 'error');
+            console.error('Login error:', error);
+            // Don't expose internal error details to user
+            this.showMessage('Login failed. Please try again.', 'error');
         }
     }
 
@@ -211,6 +264,21 @@ class PaymentFraudDetectionApp {
     }
 
     async generatePayment() {
+        // Throttling: Prevent rapid successive calls
+        const now = Date.now();
+        if (this.isGenerating) {
+            this.showMessage('Please wait, payment generation in progress...', 'warning');
+            return;
+        }
+        
+        if (now - this.lastGenerateTime < 2000) { // 2 second cooldown
+            this.showMessage('Please wait 2 seconds before generating another payment', 'warning');
+            return;
+        }
+        
+        this.isGenerating = true;
+        this.lastGenerateTime = now;
+        
         try {
             // Reset stats update flag for new payment
             this.statsUpdated = false;
@@ -286,6 +354,9 @@ class PaymentFraudDetectionApp {
         await this.performFraudCheck();
         
         this.showMessage('Payment generated with fallback method and fraud checked!', 'warning');
+        } finally {
+            // Always reset the generating flag
+            this.isGenerating = false;
         }
     }
 
@@ -340,13 +411,19 @@ class PaymentFraudDetectionApp {
                     iban: iban,
                     riskLevel: 'GOOD' // Default to GOOD, will be determined by fraud check
                 }));
+            } else if (response.status === 429) {
+                console.warn('Rate limit exceeded, using fallback IBANs');
+                this.showMessage('Rate limit exceeded, using fallback data', 'warning');
+                return this.generateRandomIBANs(count);
             } else {
                 console.error('Failed to fetch IBANs with risk data from database:', response.status);
-                return [];
+                this.showMessage('Failed to fetch IBAN data, using fallback', 'warning');
+                return this.generateRandomIBANs(count);
             }
         } catch (error) {
             console.error('Error fetching IBANs with risk data from database:', error);
-            return [];
+            this.showMessage('Network error, using fallback data', 'warning');
+            return this.generateRandomIBANs(count);
         }
     }
 
@@ -634,8 +711,27 @@ class PaymentFraudDetectionApp {
                     console.log('🚫 Skipping loadRecentValidations for REVIEW payment');
                 }
             } else {
-                const error = await response.json();
-                this.showMessage(`Fraud check failed: ${error.reason || 'Unknown error'}`, 'error');
+                // Handle different response types
+                let errorMessage = 'Unknown error';
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const error = await response.json();
+                        errorMessage = error.reason || error.message || 'Unknown error';
+                    } else {
+                        // Handle HTML error pages (503, 502, etc.)
+                        const text = await response.text();
+                        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                            errorMessage = `Server error (${response.status}): Service temporarily unavailable`;
+                        } else {
+                            errorMessage = `Server error (${response.status}): ${text.substring(0, 100)}`;
+                        }
+                    }
+                } catch (parseError) {
+                    errorMessage = `Server error (${response.status}): Unable to parse response`;
+                }
+                
+                this.showMessage(`Fraud check failed: ${errorMessage}`, 'error');
                 this.updateStats(responseTime, false);
             }
             
@@ -643,7 +739,20 @@ class PaymentFraudDetectionApp {
             console.error('Fraud check error details:', error);
             console.error('Error message:', error.message);
             console.error('Error stack:', error.stack);
-            this.showMessage(`Network error during fraud check: ${error.message}`, 'error');
+            
+            // Handle specific error types
+            let errorMessage = 'Network error during fraud check';
+            if (error.message.includes('Unexpected token') && error.message.includes('<!DOCTYPE')) {
+                errorMessage = 'Server returned HTML instead of JSON - service may be overloaded';
+            } else if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Unable to connect to server - please check your connection';
+            } else if (error.message.includes('503')) {
+                errorMessage = 'Service temporarily unavailable - please try again in a moment';
+            } else {
+                errorMessage = `Network error: ${error.message}`;
+            }
+            
+            this.showMessage(errorMessage, 'error');
         }
     }
 

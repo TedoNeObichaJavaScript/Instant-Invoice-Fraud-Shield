@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .pass { background-color: #d4edda; border-color: #c3e6cb; }
+        .fail { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Security Features Test</h1>
+    
+    <div id="tests">
+        <div class="test" id="test1">
+            <h3>Test 1: Input Validation</h3>
+            <input type="text" id="username" placeholder="Username" />
+            <button onclick="testInputValidation()">Test Username Validation</button>
+            <div id="result1"></div>
+        </div>
+        
+        <div class="test" id="test2">
+            <h3>Test 2: XSS Prevention</h3>
+            <input type="text" id="xssInput" placeholder="Try: <script>alert(1)</script>" />
+            <button onclick="testXSSPrevention()">Test XSS Prevention</button>
+            <div id="result2"></div>
+        </div>
+        
+        <div class="test" id="test3">
+            <h3>Test 3: API Connection</h3>
+            <button onclick="testAPIConnection()">Test API Connection</button>
+            <div id="result3"></div>
+        </div>
+        
+        <div class="test" id="test4">
+            <h3>Test 4: Security Headers</h3>
+            <button onclick="testSecurityHeaders()">Test Security Headers</button>
+            <div id="result4"></div>
+        </div>
+    </div>
+
+    <script>
+        // Input validation function (copied from app.js)
+        function sanitizeInput(input) {
+            if (typeof input !== 'string') return '';
+            return input.trim().replace(/[<>\"'&]/g, function(match) {
+                const escape = {
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#x27;',
+                    '&': '&amp;'
+                };
+                return escape[match];
+            });
+        }
+
+        function validateInput(input, type) {
+            if (!input || typeof input !== 'string') return false;
+            
+            switch (type) {
+                case 'username':
+                    return /^[a-zA-Z0-9_]{3,20}$/.test(input);
+                case 'password':
+                    return input.length >= 6 && input.length <= 128;
+                case 'iban':
+                    return /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(input);
+                case 'amount':
+                    return /^\d+(\.\d{1,2})?$/.test(input) && parseFloat(input) > 0;
+                default:
+                    return true;
+            }
+        }
+
+        function testInputValidation() {
+            const username = document.getElementById('username').value;
+            const isValid = validateInput(username, 'username');
+            const result = document.getElementById('result1');
+            
+            if (isValid) {
+                result.innerHTML = '✅ PASS: Username validation working';
+                result.parentElement.className = 'test pass';
+            } else {
+                result.innerHTML = '❌ FAIL: Username validation not working';
+                result.parentElement.className = 'test fail';
+            }
+        }
+
+        function testXSSPrevention() {
+            const input = document.getElementById('xssInput').value;
+            const sanitized = sanitizeInput(input);
+            const result = document.getElementById('result2');
+            
+            if (sanitized.includes('&lt;') && sanitized.includes('&gt;')) {
+                result.innerHTML = '✅ PASS: XSS prevention working - Input sanitized: ' + sanitized;
+                result.parentElement.className = 'test pass';
+            } else {
+                result.innerHTML = '❌ FAIL: XSS prevention not working - Input: ' + sanitized;
+                result.parentElement.className = 'test fail';
+            }
+        }
+
+        async function testAPIConnection() {
+            const result = document.getElementById('result3');
+            result.innerHTML = 'Testing API connection...';
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+                });
+                
+                if (response.ok) {
+                    result.innerHTML = '✅ PASS: API connection working - Status: ' + response.status;
+                    result.parentElement.className = 'test pass';
+                } else {
+                    result.innerHTML = '❌ FAIL: API connection failed - Status: ' + response.status;
+                    result.parentElement.className = 'test fail';
+                }
+            } catch (error) {
+                result.innerHTML = '❌ FAIL: API connection error - ' + error.message;
+                result.parentElement.className = 'test fail';
+            }
+        }
+
+        async function testSecurityHeaders() {
+            const result = document.getElementById('result4');
+            result.innerHTML = 'Testing security headers...';
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+                });
+                
+                const headers = response.headers;
+                const securityHeaders = [
+                    'x-content-type-options',
+                    'x-frame-options',
+                    'x-xss-protection'
+                ];
+                
+                let foundHeaders = 0;
+                let headerInfo = '';
+                
+                securityHeaders.forEach(header => {
+                    if (headers.get(header)) {
+                        foundHeaders++;
+                        headerInfo += header + ': ' + headers.get(header) + '<br>';
+                    }
+                });
+                
+                if (foundHeaders >= 2) {
+                    result.innerHTML = '✅ PASS: Security headers present (' + foundHeaders + '/3)<br>' + headerInfo;
+                    result.parentElement.className = 'test pass';
+                } else {
+                    result.innerHTML = '❌ FAIL: Missing security headers (' + foundHeaders + '/3)<br>' + headerInfo;
+                    result.parentElement.className = 'test fail';
+                }
+            } catch (error) {
+                result.innerHTML = '❌ FAIL: Security headers test error - ' + error.message;
+                result.parentElement.className = 'test fail';
+            }
+        }
+    </script>
+</body>
+</html>

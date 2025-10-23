@@ -3,7 +3,6 @@ package com.microservices.gateway.service;
 import com.microservices.gateway.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,12 +60,12 @@ public class JwtService {
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
         String token = Jwts.builder()
-                .setSubject(user.getId().toString())
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
+                .subject(user.getId().toString())
+                .issuedAt(now)
+                .expiration(expiryDate)
                 .claim("username", user.getUsername())
                 .claim("email", user.getEmail())
-                .signWith(secretKey, SignatureAlgorithm.HS512)
+                .signWith(secretKey, Jwts.SIG.HS512)
                 .compact();
 
         // Store token in database
@@ -84,13 +83,13 @@ public class JwtService {
         Date expiryDate = new Date(now.getTime() + expirationTime);
 
         String token = Jwts.builder()
-                .setSubject(user.getId().toString())
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
+                .subject(user.getId().toString())
+                .issuedAt(now)
+                .expiration(expiryDate)
                 .claim("username", user.getUsername())
                 .claim("email", user.getEmail())
                 .claim("rememberMe", rememberMe)
-                .signWith(secretKey, SignatureAlgorithm.HS512)
+                .signWith(secretKey, Jwts.SIG.HS512)
                 .compact();
 
         // Store token in database
@@ -150,8 +149,8 @@ public class JwtService {
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     public void revokeToken(String token) {
@@ -216,8 +215,8 @@ public class JwtService {
             return Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody()
+                    .parseSignedClaims(token)
+                    .getPayload()
                     .getExpiration()
                     .before(new Date());
         } catch (Exception e) {

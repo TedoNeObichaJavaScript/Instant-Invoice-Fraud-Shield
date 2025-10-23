@@ -31,11 +31,40 @@ spring:
 
 server:
   port: 8080
+  ssl:
+    enabled: ${SSL_ENABLED:false}
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    max-connections: 8192
+    accept-count: 100
+    connection-timeout: 20000
+  servlet:
+    session:
+      cookie:
+        secure: false
+        http-only: true
+        same-site: strict
+      timeout: 30m
 
 jwt:
   secret: ${JWT_SECRET:YWJjZGVmZ2hpams7bG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MGFiY2RlZmdoaWprO2xtbm9wcXJzdHV2eHl6MTIzNDU2Nzg5MA==}
-  expiration: 86400000
-  refresh-expiration: 604800000
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+# Rate Limiting Configuration
+rate-limit:
+  requests-per-minute: ${RATE_LIMIT_REQUESTS_PER_MINUTE:300}
+  burst-capacity: ${RATE_LIMIT_BURST_CAPACITY:500}
+
+# Security Configuration
+security:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://localhost:3000,https://localhost:8080}
+  headers:
+    content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'"
+    hsts-max-age: 31536000
 
 gateway:
   accounts-service-url: ${ACCOUNTS_SERVICE_URL:http://localhost:8081}

@@ -1,8 +1,7 @@
 package com.microservices.gateway.config;
 
-import com.microservices.gateway.security.CustomUserDetailsService;
+import com.microservices.gateway.filter.RateLimitingFilter;
 import com.microservices.gateway.security.JwtAuthenticationFilter;
-import com.microservices.gateway.service.JwtService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -28,7 +27,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, RateLimitingFilter rateLimitingFilter) throws Exception {
         // Security configuration initialized
         
         http
@@ -44,6 +43,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/v1/**").authenticated()
                 .anyRequest().permitAll()
             )
+            .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

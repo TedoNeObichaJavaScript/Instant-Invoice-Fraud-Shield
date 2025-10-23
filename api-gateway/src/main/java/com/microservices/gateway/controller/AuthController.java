@@ -4,11 +4,12 @@ import com.microservices.gateway.model.LoginRequest;
 import com.microservices.gateway.model.User;
 import com.microservices.gateway.service.AuditService;
 import com.microservices.gateway.service.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -26,12 +27,42 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest loginRequest, 
+    public ResponseEntity<Map<String, Object>> login(@RequestBody @Valid LoginRequest loginRequest, 
                                                      HttpServletRequest request) {
-        long startTime = System.currentTimeMillis();
+        // long startTime = System.currentTimeMillis(); // For future audit logging
+        
+        // Input validation
+        if (loginRequest.getUsername() == null || loginRequest.getUsername().trim().isEmpty()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Username is required");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        if (loginRequest.getPassword() == null || loginRequest.getPassword().trim().isEmpty()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Password is required");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        // Sanitize inputs
+        String username = loginRequest.getUsername().trim();
+        String password = loginRequest.getPassword();
+        
+        // Additional validation
+        if (username.length() < 3 || username.length() > 20) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Username must be between 3 and 20 characters");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        if (password.length() < 6 || password.length() > 128) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", "Password must be between 6 and 128 characters");
+            return ResponseEntity.badRequest().body(response);
+        }
         
         // Debug logging
-        System.out.println("DEBUG: LoginRequest - username: " + loginRequest.getUsername() + 
+        System.out.println("DEBUG: LoginRequest - username: " + username + 
                           ", rememberMe: " + loginRequest.isRememberMe());
         
         try {
