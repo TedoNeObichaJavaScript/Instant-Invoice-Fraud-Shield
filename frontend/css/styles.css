@@ -621,6 +621,41 @@ body {
     transform: translateY(-2px);
 }
 
+/* Fix for all input field background issues (password, username, etc.) */
+.modern-input-wrapper input[type="password"],
+.modern-input-wrapper input[type="text"],
+.modern-input-wrapper input[type="email"],
+.modern-input-wrapper input[type="username"] {
+    background: rgba(255, 255, 255, 0.1) !important;
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.1) inset !important;
+}
+
+.modern-input-wrapper input[type="password"]:focus,
+.modern-input-wrapper input[type="text"]:focus,
+.modern-input-wrapper input[type="email"]:focus,
+.modern-input-wrapper input[type="username"]:focus {
+    background: rgba(255, 255, 255, 0.15) !important;
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.15) inset !important;
+}
+
+/* Override browser autofill styling for all input types */
+.modern-input-wrapper input:-webkit-autofill,
+.modern-input-wrapper input:-webkit-autofill:hover,
+.modern-input-wrapper input:-webkit-autofill:focus,
+.modern-input-wrapper input:-webkit-autofill:active {
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.1) inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Additional fix for Firefox autofill */
+.modern-input-wrapper input:-moz-autofill {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
 .password-toggle {
     position: absolute;
     right: 1.25rem;
