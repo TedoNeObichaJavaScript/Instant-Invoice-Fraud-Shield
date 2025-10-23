@@ -31,10 +31,10 @@ A production-ready microservices application that provides real-time payment fra
 To provide instant, accurate fraud detection for payment transactions while maintaining sub-second response times and 99.9%+ availability.
 
 ### **Target Use Cases**
-- **E-commerce Platforms**: Real-time payment validation
-- **Financial Institutions**: Transaction risk assessment
-- **Payment Processors**: Fraud prevention and detection
-- **Enterprise Systems**: Invoice and payment security
+- **E-commerce Platforms**: Real-time payment validation through web interface
+- **Financial Institutions**: Transaction risk assessment via web dashboard
+- **Payment Processors**: Fraud prevention and detection through API integration
+- **Enterprise Systems**: Invoice and payment security via web application
 
 ---
 
@@ -79,7 +79,6 @@ To provide instant, accurate fraud detection for payment transactions while main
 graph TB
     subgraph "Client Layer"
         Browser[🌐 Web Browser]
-        Mobile[📱 Mobile App]
     end
     
     subgraph "Load Balancer & Reverse Proxy"
@@ -105,7 +104,6 @@ graph TB
     end
     
     Browser --> Nginx
-    Mobile --> Nginx
     Nginx --> Gateway
     Gateway --> Accounts
     Gateway --> Redis
