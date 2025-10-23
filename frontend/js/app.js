@@ -631,11 +631,24 @@ class PaymentFraudDetectionApp {
         console.log('=== REJECT PAYMENT CALLED ===');
         console.log('Current payment:', this.currentPayment);
         console.log('Current payment riskStatus:', this.currentPayment?.riskStatus);
+        console.log('Current payment validationUsed:', this.currentPayment?.validationUsed);
         
         if (!this.currentPayment) {
             this.showMessage('No payment to reject. Please generate a payment first.', 'error');
             return;
         }
+
+        // Check if validation has already been used for this payment
+        if (this.currentPayment.validationUsed) {
+            this.showMessage('Payment already processed. Generate a new payment to reject again.', 'warning');
+            return;
+        }
+
+        // Check if there's already a validation entry for this payment and update it instead of creating new one
+        const existingValidation = this.validations.find(v => 
+            v.invoiceId === this.currentPayment.invoiceId && 
+            v.iban === this.currentPayment.iban
+        );
 
         // Check if payment is in REVIEW status - don't allow manual rejection
         if (this.currentPayment.riskStatus === 'REVIEW') {
@@ -656,28 +669,47 @@ class PaymentFraudDetectionApp {
             
             const responseTime = Date.now() - startTime;
             
+            // Mark validation as used
+            this.currentPayment.validationUsed = true;
+            
             // Update IBAN status display to show "BLOCK" status
             this.updateIbanStatusDisplay(rejectionResult.riskLevel, 'BLOCK');
             
             this.showMessage(`Payment rejected and blocked in ${responseTime}ms`, 'error');
             
-            // Update stats with proper risk status
+            // Update stats with proper risk status - reset statsUpdated flag first
+            this.statsUpdated = false;
             const riskStatus = 'BLOCK'; // Always block for rejection
             this.updateStats(responseTime, false, riskStatus);
             
-            // Save to recent validations
-            this.saveValidation({
-                ...this.currentPayment,
-                result: {
-                    riskStatus: 'BLOCK',
-                    riskLevel: rejectionResult.riskLevel,
-                    reason: 'Payment manually rejected and blocked',
-                    requiresManualReview: false
-                },
-                responseTime: responseTime,
-                timestamp: new Date().toISOString(),
-                validationType: 'manual_rejection'
-            });
+            if (existingValidation) {
+                // Update existing validation entry
+                existingValidation.result.riskStatus = 'BLOCK';
+                existingValidation.result.riskLevel = rejectionResult.riskLevel;
+                existingValidation.result.reason = 'Payment manually rejected and blocked';
+                existingValidation.responseTime = responseTime;
+                existingValidation.timestamp = new Date().toISOString();
+                existingValidation.validationType = 'manual_rejection';
+                
+                // Save updated validations
+                localStorage.setItem('fraudShieldValidations', JSON.stringify(this.validations));
+                console.log('Updated existing validation entry to BLOCK');
+            } else {
+                // Create new validation entry
+                this.saveValidation({
+                    ...this.currentPayment,
+                    result: {
+                        riskStatus: 'BLOCK',
+                        riskLevel: rejectionResult.riskLevel,
+                        reason: 'Payment manually rejected and blocked',
+                        requiresManualReview: false
+                    },
+                    responseTime: responseTime,
+                    timestamp: new Date().toISOString(),
+                    validationType: 'manual_rejection'
+                });
+                console.log('Created new validation entry for BLOCK');
+            }
             
             this.loadRecentValidations();
             
