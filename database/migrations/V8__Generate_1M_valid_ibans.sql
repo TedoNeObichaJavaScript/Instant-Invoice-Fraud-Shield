@@ -79,7 +79,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to generate risk level and score with equal distribution (33.33% each)
+-- Function to generate risk level and score with realistic distribution
 CREATE OR REPLACE FUNCTION generate_risk_data() RETURNS TABLE(risk_level VARCHAR(10), risk_score INTEGER) AS $$
 DECLARE
     rand_val NUMERIC;
@@ -88,18 +88,18 @@ DECLARE
 BEGIN
     rand_val := random();
     
-    IF rand_val < 0.333333 THEN
-        -- GOOD: 33.33% - Risk score 0-30
+    IF rand_val < 0.4 THEN
+        -- GOOD: 40% - Risk score 0-30 (normal payments with rounded amounts)
         base_score := 15;
         score_variance := floor(random() * 16); -- 0-15 variance
         RETURN QUERY SELECT 'GOOD'::VARCHAR(10), (base_score + score_variance)::INTEGER;
-    ELSIF rand_val < 0.666666 THEN
-        -- REVIEW: 33.33% - Risk score 31-70
+    ELSIF rand_val < 0.7 THEN
+        -- REVIEW: 30% - Risk score 31-70 (suspicious amounts sometimes)
         base_score := 50;
-        score_variance := floor(random() * 20); -- 0-19 variance
+        score_variance := floor(random() * 21); -- 0-20 variance
         RETURN QUERY SELECT 'REVIEW'::VARCHAR(10), (base_score + score_variance)::INTEGER;
     ELSE
-        -- BLOCK: 33.33% - Risk score 71-100
+        -- BLOCK: 30% - Risk score 71-100 (high-risk IBANs)
         base_score := 85;
         score_variance := floor(random() * 16); -- 0-15 variance
         RETURN QUERY SELECT 'BLOCK'::VARCHAR(10), (base_score + score_variance)::INTEGER;
@@ -140,10 +140,9 @@ JOIN risk_data r ON i.seq_num = r.seq_num;
 DO $$
 DECLARE
     record_count INTEGER;
-    good_count INTEGER;
-    review_count INTEGER;
-    block_count INTEGER;
-    total_records INTEGER;
+    low_count INTEGER;
+    medium_count INTEGER;
+    high_count INTEGER;
 BEGIN
     -- Check total count
     SELECT COUNT(*) INTO record_count FROM risk.iban_risk_lookup;
@@ -158,21 +157,19 @@ BEGIN
         COUNT(*) FILTER (WHERE risk_level = 'GOOD'),
         COUNT(*) FILTER (WHERE risk_level = 'REVIEW'),
         COUNT(*) FILTER (WHERE risk_level = 'BLOCK')
-    INTO good_count, review_count, block_count
+    INTO low_count, medium_count, high_count
     FROM risk.iban_risk_lookup;
     
-    total_records := good_count + review_count + block_count;
+    RAISE NOTICE 'Distribution: GOOD=%, REVIEW=%, BLOCK=%', low_count, medium_count, high_count;
+    RAISE NOTICE 'Total records: %', (low_count + medium_count + high_count);
     
-    RAISE NOTICE 'Distribution: GOOD=%, REVIEW=%, BLOCK=%', good_count, review_count, block_count;
-    RAISE NOTICE 'Total records: %', total_records;
-    
-    -- Verify distribution is approximately equal (within 1% tolerance)
-    IF ABS(good_count - 333333) > 3333 OR 
-       ABS(review_count - 333333) > 3333 OR 
-       ABS(block_count - 333334) > 3333 THEN
-        RAISE WARNING 'Distribution is not approximately equal. Consider re-running if needed.';
+    -- Verify distribution matches expected percentages (within 2% tolerance)
+    IF ABS(low_count - 400000) > 8000 OR 
+       ABS(medium_count - 300000) > 6000 OR 
+       ABS(high_count - 300000) > 6000 THEN
+        RAISE WARNING 'Distribution is not approximately correct. Consider re-running if needed.';
     ELSE
-        RAISE NOTICE 'Distribution verification passed - approximately equal thirds.';
+        RAISE NOTICE 'Distribution verification passed - GOOD 40%, REVIEW 30%, BLOCK 30%.';
     END IF;
     
     -- Verify risk scores are in expected ranges

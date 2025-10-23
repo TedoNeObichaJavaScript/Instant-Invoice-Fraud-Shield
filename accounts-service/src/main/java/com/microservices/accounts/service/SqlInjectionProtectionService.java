@@ -14,11 +14,8 @@ import java.util.ArrayList;
 @Service
 public class SqlInjectionProtectionService {
 
-    // Common SQL injection patterns
+    // Common SQL injection patterns - More targeted and less aggressive
     private static final Pattern[] SQL_INJECTION_PATTERNS = {
-        // Basic SQL injection patterns
-        Pattern.compile("(?i).*('|(\\-\\-)|(;)|(\\|\\|)|(\\+)|(\\*)|(%)|(\\?)|(\\=)|(\\<)|(\\>)|(\\[)|(\\])|(\\{)|(\\})|(\\()|(\\))|(\\^)|(\\$)|(\\~)|(\\!)|(\\@)|(\\#)|(\\&)|(\\|)|(\\\\)|(\\/)|(\\:)|(\\;)|(\\,)|(\\\\.)|(\\\")|(\\')|(\\`)|(\\[)|(\\])|(\\{)|(\\})|(\\()|(\\))|(\\^)|(\\$)|(\\~)|(\\!)|(\\@)|(\\#)|(\\&)|(\\|)|(\\\\)|(\\/)|(\\:)|(\\;)|(\\,)|(\\\\.)|(\\\")|(\\')|(\\`)).*"),
-        
         // UNION-based attacks
         Pattern.compile("(?i).*union.*select.*", Pattern.CASE_INSENSITIVE),
         
@@ -31,8 +28,8 @@ public class SqlInjectionProtectionService {
         // Time-based blind SQL injection
         Pattern.compile("(?i).*(sleep|waitfor|delay|benchmark).*", Pattern.CASE_INSENSITIVE),
         
-        // Stacked queries
-        Pattern.compile("(?i).*;.*", Pattern.CASE_INSENSITIVE),
+        // Stacked queries (but allow single semicolon at end)
+        Pattern.compile("(?i).*;.*;.*", Pattern.CASE_INSENSITIVE),
         
         // Function-based attacks
         Pattern.compile("(?i).*(load_file|into\\s+outfile|into\\s+dumpfile).*", Pattern.CASE_INSENSITIVE),
@@ -62,15 +59,23 @@ public class SqlInjectionProtectionService {
         Pattern.compile("(?i).*cast\\s*\\(.*", Pattern.CASE_INSENSITIVE),
         
         // Convert function attacks
-        Pattern.compile("(?i).*convert\\s*\\(.*", Pattern.CASE_INSENSITIVE)
+        Pattern.compile("(?i).*convert\\s*\\(.*", Pattern.CASE_INSENSITIVE),
+        
+        // SQL keywords in suspicious contexts
+        Pattern.compile("(?i).*(drop|create|alter|truncate|delete|insert|update).*table.*", Pattern.CASE_INSENSITIVE),
+        
+        // Script injection attempts
+        Pattern.compile("(?i).*<script.*>.*", Pattern.CASE_INSENSITIVE),
+        
+        // SQL injection with quotes
+        Pattern.compile("(?i).*'.*(or|and).*'.*", Pattern.CASE_INSENSITIVE)
     };
 
-    // Dangerous characters that should be escaped or rejected
+    // Dangerous characters that should be escaped or rejected - More targeted
     private static final String[] DANGEROUS_CHARS = {
-        "'", "\"", ";", "--", "/*", "*/", "xp_", "sp_", "exec", "execute",
-        "select", "insert", "update", "delete", "drop", "create", "alter",
-        "union", "or", "and", "script", "<", ">", "&lt;", "&gt;", "&amp;",
-        "javascript:", "vbscript:", "onload", "onerror", "onclick"
+        "'", "\"", "--", "/*", "*/", "xp_", "sp_", "exec", "execute",
+        "union", "script", "<script", "javascript:", "vbscript:", 
+        "onload", "onerror", "onclick", "0x", "information_schema"
     };
 
     /**

@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -170,11 +171,20 @@ public class FraudDetectionController {
                 count = 10;
             }
 
-            // Get random IBANs from database - return all risk levels for realistic testing
-            String sql = "SELECT iban FROM risk.iban_risk_lookup ORDER BY RANDOM() LIMIT ?";
-            List<String> ibans = jdbcTemplate.queryForList(sql, String.class, count);
+            // Get random IBANs from database with their risk levels for realistic testing
+            String sql = "SELECT iban, risk_level FROM risk.iban_risk_lookup ORDER BY RANDOM() LIMIT ?";
+            List<Map<String, Object>> ibanData = jdbcTemplate.queryForList(sql, count);
+            
+            List<String> ibans = new ArrayList<>();
+            List<String> riskLevels = new ArrayList<>();
+            
+            for (Map<String, Object> row : ibanData) {
+                ibans.add((String) row.get("iban"));
+                riskLevels.add((String) row.get("risk_level"));
+            }
 
             response.put("ibans", ibans);
+            response.put("riskLevels", riskLevels);
             response.put("count", ibans.size());
             responseStatus = 200;
 

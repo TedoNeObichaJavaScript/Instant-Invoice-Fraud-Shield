@@ -147,7 +147,7 @@ public class SupplierFraudDetectionService {
         List<String> anomalies = new ArrayList<>();
         
         // IBAN-based anomalies
-        if ("HIGH".equals(ibanRiskLevel) || "BLOCKED".equals(ibanRiskLevel)) {
+        if ("REVIEW".equals(ibanRiskLevel) || "BLOCK".equals(ibanRiskLevel)) {
             anomalies.add("Supplier IBAN flagged as high risk in crowdsourced database");
         }
         
@@ -187,7 +187,7 @@ public class SupplierFraudDetectionService {
     }
 
     private String determineFraudStatus(String ibanRiskLevel, List<String> anomalies) {
-        if ("BLOCKED".equals(ibanRiskLevel)) {
+        if ("BLOCK".equals(ibanRiskLevel)) {
             return "BLOCKED";
         }
         
@@ -203,15 +203,15 @@ public class SupplierFraudDetectionService {
     }
 
     private String determineRiskLevel(String ibanRiskLevel, List<String> anomalies) {
-        if ("BLOCKED".equals(ibanRiskLevel) || anomalies.size() >= 3) {
+        if ("BLOCK".equals(ibanRiskLevel) || anomalies.size() >= 3) {
             return "CRITICAL";
         }
         
-        if ("HIGH".equals(ibanRiskLevel) || anomalies.size() >= 2) {
+        if ("REVIEW".equals(ibanRiskLevel) || anomalies.size() >= 2) {
             return "HIGH";
         }
         
-        if ("MEDIUM".equals(ibanRiskLevel) || anomalies.size() >= 1) {
+        if ("GOOD".equals(ibanRiskLevel) && anomalies.size() >= 1) {
             return "MEDIUM";
         }
         
