@@ -509,8 +509,8 @@ class PaymentFraudDetectionApp {
                 // Don't change the text - keep it as "Validate Payment"
             }
             
-            // Update IBAN status display to show "Accepted" status
-            this.updateIbanStatusDisplay(validationResult.riskLevel, 'Accepted');
+            // Update IBAN status display to show "ALLOW" status
+            this.updateIbanStatusDisplay(validationResult.riskLevel, 'ALLOW');
             
             this.showMessage(`Payment accepted and validated in ${responseTime}ms`, 'success');
             
