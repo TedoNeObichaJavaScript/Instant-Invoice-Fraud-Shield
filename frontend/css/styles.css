@@ -2091,3 +2091,307 @@ body:has(.modern-login-container) .footer {
         gap: 4px;
     }
 }
+
+/* ========================================
+   VALIDATION DETAILS MODAL STYLES
+   ======================================== */
+
+/* Clickable validation items */
+.validation-item.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.validation-item.clickable:hover {
+    background-color: #f8fafc;
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+
+/* Modal overlay */
+.validation-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+}
+
+/* Modal container */
+.validation-modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    color: #64748b;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close-btn:hover {
+    background-color: #f1f5f9;
+    color: #1e293b;
+    transform: scale(1.1);
+}
+
+/* Modal content */
+.modal-content {
+    padding: 24px;
+}
+
+/* Section headers */
+.transaction-section,
+.fraud-analysis-section,
+.reason-section,
+.anomalies-section,
+.metadata-section {
+    margin-bottom: 24px;
+}
+
+.transaction-section h4,
+.fraud-analysis-section h4,
+.reason-section h4,
+.anomalies-section h4,
+.metadata-section h4 {
+    margin: 0 0 16px 0;
+    color: #1e293b;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+    position: relative;
+}
+
+.transaction-section h4::before,
+.fraud-analysis-section h4::before,
+.reason-section h4::before,
+.anomalies-section h4::before,
+.metadata-section h4::before {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+}
+
+/* Detail grid */
+.detail-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.detail-item:hover {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.detail-value {
+    color: #1e293b;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Risk status colors */
+.detail-value.risk-status.allow {
+    color: #10b981;
+    font-weight: 600;
+    background-color: #f0fdf4;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #bbf7d0;
+}
+
+.detail-value.risk-status.review {
+    color: #f59e0b;
+    font-weight: 600;
+    background-color: #fffbeb;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #fde68a;
+}
+
+.detail-value.risk-status.block {
+    color: #ef4444;
+    font-weight: 600;
+    background-color: #fef2f2;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #fecaca;
+}
+
+/* Reason text */
+.reason-text {
+    background-color: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+    line-height: 1.6;
+    margin: 0;
+    font-style: italic;
+}
+
+/* Anomalies list */
+.anomalies-list {
+    background-color: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin: 0;
+    list-style: none;
+}
+
+.anomalies-list li {
+    color: #1e293b;
+    margin-bottom: 8px;
+    padding-left: 20px;
+    position: relative;
+}
+
+.anomalies-list li::before {
+    content: '⚠️';
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.anomalies-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* Modal footer */
+.modal-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    background: #f8fafc;
+    border-radius: 0 0 12px 12px;
+}
+
+.modal-footer button {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #6b7280;
+    color: white;
+}
+
+.modal-footer button:hover {
+    background-color: #4b5563;
+    transform: translateY(-1px);
+}
+
+/* Mobile responsive for modal */
+@media (max-width: 768px) {
+    .validation-modal {
+        margin: 10px;
+        max-height: 95vh;
+    }
+    
+    .modal-header {
+        padding: 16px 20px;
+    }
+    
+    .modal-content {
+        padding: 20px;
+    }
+    
+    .detail-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .detail-label {
+        font-size: 0.8rem;
+    }
+    
+    .detail-value {
+        font-size: 0.85rem;
+    }
+    
+    .modal-footer {
+        padding: 16px 20px;
+    }
+    
+    .modal-footer button {
+        width: 100%;
+    }
+}

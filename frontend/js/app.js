@@ -1023,21 +1023,22 @@ class PaymentFraudDetectionApp {
         }
         
         // Show all validations (increased limit from 5 to 50)
-        const validationsHtml = this.validations.slice(0, 50).map(validation => {
+        const validationsHtml = this.validations.slice(0, 50).map((validation, index) => {
             const riskStatus = validation.result?.riskStatus || 'UNKNOWN';
             const riskLevel = validation.result?.riskLevel || 'UNKNOWN';
             const statusClass = this.getRiskStatusClass(riskStatus);
             const validationType = validation.validationType || 'unknown';
             const typeLabel = validationType === 'fraud_check' ? 'Fraud Check' : 
-                             validationType === 'manual' ? 'Validated' : 'Unknown';
+                             validationType === 'manual' ? 'Validated' : 
+                             validationType === 'manual_review' ? 'Manual Review' : 'Unknown';
             
             return `
-            <div class="validation-item">
+            <div class="validation-item clickable" data-validation-index="${index}">
                 <div class="validation-header">
                     <span class="invoice-id">${validation.invoiceId}</span>
-                        <span class="validation-type">${typeLabel}</span>
-                        <span class="risk-status ${statusClass}">
-                            ${this.formatRiskStatus(riskStatus)}
+                    <span class="validation-type">${typeLabel}</span>
+                    <span class="risk-status ${statusClass}">
+                        ${this.formatRiskStatus(riskStatus)}
                     </span>
                 </div>
                 <div class="validation-details">
@@ -1053,6 +1054,9 @@ class PaymentFraudDetectionApp {
         }).join('');
         
         recentValidationsDiv.innerHTML = validationsHtml;
+        
+        // Add click event listeners to validation items
+        this.addValidationClickListeners();
     }
 
     updateBlockedPaymentsDisplay() {
@@ -1248,6 +1252,196 @@ class PaymentFraudDetectionApp {
         this.messageQueue = this.messageQueue.filter(msg => (now - msg.timestamp) < 10000);
     }
 
+    addValidationClickListeners() {
+        const validationItems = document.querySelectorAll('.validation-item.clickable');
+        console.log('Found clickable validation items:', validationItems.length);
+        
+        validationItems.forEach((item, index) => {
+            console.log(`Adding click listener to item ${index}`);
+            
+            item.addEventListener('click', (e) => {
+                console.log('Validation item clicked!', e);
+                const validationIndex = parseInt(item.getAttribute('data-validation-index'));
+                console.log('Validation index:', validationIndex);
+                const validation = this.validations[validationIndex];
+                console.log('Validation data:', validation);
+                
+                if (validation) {
+                    console.log('Showing modal for validation:', validation.invoiceId);
+                    this.showValidationDetailsModal(validation);
+                } else {
+                    console.error('No validation data found for index:', validationIndex);
+                }
+            });
+            
+            // Add hover effects
+            item.addEventListener('mouseenter', () => {
+                item.style.transform = 'translateY(-2px)';
+                item.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            });
+            
+            item.addEventListener('mouseleave', () => {
+                item.style.transform = 'translateY(0)';
+                item.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+            });
+        });
+    }
+
+    showValidationDetailsModal(validation) {
+        console.log('Creating modal for validation:', validation);
+        
+        // Create modal overlay
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'validation-modal-overlay';
+        modalOverlay.innerHTML = `
+            <div class="validation-modal">
+                <div class="modal-header">
+                    <h3>Transaction Details</h3>
+                    <button class="modal-close-btn" type="button">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-content">
+                    <div class="transaction-section">
+                        <h4>Payment Information</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Invoice ID:</span>
+                                <span class="detail-value">${validation.invoiceId}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Amount:</span>
+                                <span class="detail-value">${validation.amount} BGN</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Supplier Name:</span>
+                                <span class="detail-value">${validation.supplierName}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Supplier IBAN:</span>
+                                <span class="detail-value">${validation.supplierIban}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Country:</span>
+                                <span class="detail-value">${validation.supplierCountry}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Purpose:</span>
+                                <span class="detail-value">${validation.paymentPurpose}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="fraud-analysis-section">
+                        <h4>Fraud Analysis Results</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Risk Status:</span>
+                                <span class="detail-value risk-status ${this.getRiskStatusClass(validation.result?.riskStatus || 'UNKNOWN')}">
+                                    ${this.formatRiskStatus(validation.result?.riskStatus || 'UNKNOWN')}
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Risk Level:</span>
+                                <span class="detail-value">${validation.result?.riskLevel || 'UNKNOWN'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Response Time:</span>
+                                <span class="detail-value">${validation.responseTime}ms</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Validation Type:</span>
+                                <span class="detail-value">${this.getValidationTypeLabel(validation.validationType)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Transaction ID:</span>
+                                <span class="detail-value">${validation.result?.transactionId || 'N/A'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Manual Review Required:</span>
+                                <span class="detail-value">${validation.result?.requiresManualReview ? 'Yes' : 'No'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${validation.result?.reason ? `
+                    <div class="reason-section">
+                        <h4>Analysis Reason</h4>
+                        <p class="reason-text">${validation.result.reason}</p>
+                    </div>
+                    ` : ''}
+                    
+                    ${validation.result?.anomalies && validation.result.anomalies.length > 0 ? `
+                    <div class="anomalies-section">
+                        <h4>Detected Anomalies</h4>
+                        <ul class="anomalies-list">
+                            ${validation.result.anomalies.map(anomaly => `<li>${anomaly}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="metadata-section">
+                        <h4>Transaction Metadata</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Generated At:</span>
+                                <span class="detail-value">${new Date(validation.generatedAt).toLocaleString()}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Validated At:</span>
+                                <span class="detail-value">${new Date(validation.timestamp).toLocaleString()}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Risk Level (IBAN):</span>
+                                <span class="detail-value">${validation.riskLevel || 'UNKNOWN'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary modal-close-btn">Close</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modalOverlay);
+        
+        // Add event listeners for closing the modal
+        const closeButtons = modalOverlay.querySelectorAll('.modal-close-btn');
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modalOverlay.remove();
+            });
+        });
+        
+        // Close modal when clicking outside
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.remove();
+            }
+        });
+        
+        // Close modal with Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                modalOverlay.remove();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+    }
+
+    getValidationTypeLabel(validationType) {
+        switch (validationType) {
+            case 'fraud_check': return 'Automated Fraud Check';
+            case 'manual': return 'Manual Validation';
+            case 'manual_review': return 'Manual Review';
+            default: return 'Unknown';
+        }
+    }
+
     setupAnimations() {
         // Add smooth animations for better UX
         const style = document.createElement('style');
@@ -1321,6 +1515,7 @@ class PaymentFraudDetectionApp {
                 color: #1e293b;
                 font-family: monospace;
             }
+            
         `;
         document.head.appendChild(style);
     }
