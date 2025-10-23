@@ -475,11 +475,11 @@ class PaymentFraudDetectionApp {
             return;
         }
 
-        // Check if validation has already been used for this payment
-        if (this.currentPayment.validationUsed) {
-            this.showMessage('Payment already validated. Generate a new payment to validate again.', 'warning');
-            return;
-        }
+        // Check if there's already a validation entry for this payment and update it instead of creating new one
+        const existingValidation = this.validations.find(v => 
+            v.invoiceId === this.currentPayment.invoiceId && 
+            v.iban === this.currentPayment.iban
+        );
 
         // Check if payment is in REVIEW status - don't allow manual validation
         if (this.currentPayment.riskStatus === 'REVIEW') {
@@ -500,9 +500,6 @@ class PaymentFraudDetectionApp {
             
             const responseTime = Date.now() - startTime;
             
-            // Mark validation as used
-            this.currentPayment.validationUsed = true;
-            
             // Keep the validation button enabled but don't change its text
             const validateBtn = document.getElementById('validatePaymentBtn');
             if (validateBtn) {
@@ -517,25 +514,41 @@ class PaymentFraudDetectionApp {
             
             this.showMessage(`Payment accepted and validated in ${responseTime}ms`, 'success');
             
-            // Update stats with proper risk status
+            // Update stats with proper risk status - reset statsUpdated flag first
+            this.statsUpdated = false;
             const riskStatus = 'ALLOW'; // Always allow for validation
             this.updateStats(responseTime, true, riskStatus);
+            
+            if (existingValidation) {
+                // Update existing validation entry
+                existingValidation.result.riskStatus = 'ALLOW';
+                existingValidation.result.riskLevel = validationResult.riskLevel;
+                existingValidation.result.reason = 'Payment manually validated and accepted';
+                existingValidation.responseTime = responseTime;
+                existingValidation.timestamp = new Date().toISOString();
+                existingValidation.validationType = 'manual_validation';
                 
-                // Save to recent validations
+                // Save updated validations
+                localStorage.setItem('fraudShieldValidations', JSON.stringify(this.validations));
+                console.log('Updated existing validation entry to ALLOW');
+            } else {
+                // Create new validation entry
                 this.saveValidation({
                     ...this.currentPayment,
-                result: {
-                    riskStatus: 'ALLOW',
-                    riskLevel: validationResult.riskLevel,
-                    reason: 'Payment manually validated and accepted',
-                    requiresManualReview: false
-                },
+                    result: {
+                        riskStatus: 'ALLOW',
+                        riskLevel: validationResult.riskLevel,
+                        reason: 'Payment manually validated and accepted',
+                        requiresManualReview: false
+                    },
                     responseTime: responseTime,
-                timestamp: new Date().toISOString(),
-                validationType: 'manual'
+                    timestamp: new Date().toISOString(),
+                    validationType: 'manual_validation'
                 });
-                
-                this.loadRecentValidations();
+                console.log('Created new validation entry for ALLOW');
+            }
+            
+            this.loadRecentValidations();
             
         } catch (error) {
             this.showMessage('Payment validation failed', 'error');
