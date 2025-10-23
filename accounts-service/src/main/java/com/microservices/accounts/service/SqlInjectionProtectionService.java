@@ -213,24 +213,6 @@ public class SqlInjectionProtectionService {
         }
     }
 
-    /**
-     * Validates IBAN format and content
-     * @param iban The IBAN to validate
-     * @return true if IBAN is valid and safe
-     */
-    public boolean isValidIban(String iban) {
-        if (!StringUtils.hasText(iban)) {
-            return false;
-        }
-
-        // Check for SQL injection first
-        if (!isInputSafe(iban)) {
-            return false;
-        }
-
-        // Basic IBAN format validation (2 letters + 2 digits + up to 30 alphanumeric)
-        return iban.matches("^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$");
-    }
 
     /**
      * Validates invoice number format and content
@@ -284,14 +266,4 @@ public class SqlInjectionProtectionService {
         return amount > 0 && amount <= 1000000; // Max 1 million
     }
 
-    /**
-     * Logs security events for monitoring
-     * @param event The security event description
-     * @param input The suspicious input that triggered the event
-     */
-    public void logSecurityEvent(String event, String input) {
-        // In a real application, this would log to a security monitoring system
-        System.err.println("SECURITY ALERT: " + event + " - Input: " + 
-            (input != null ? input.substring(0, Math.min(input.length(), 100)) : "null"));
-    }
 }

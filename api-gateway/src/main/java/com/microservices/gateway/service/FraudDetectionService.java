@@ -239,9 +239,6 @@ public class FraudDetectionService {
                 return false;
             }
 
-            // Extract check digits
-            String checkDigits = iban.substring(2, 4);
-            
             // Rearrange: move first 4 characters to end
             String rearranged = iban.substring(4) + iban.substring(0, 4);
             

@@ -127,21 +127,6 @@ services:
     networks:
       - microservices-network
 
-  # JMeter for Stress Testing
-  jmeter:
-    build:
-      context: ./stress_tests
-      dockerfile: Dockerfile
-    container_name: microservices-jmeter
-    volumes:
-      - ./stress_tests/results:/tests/results
-    networks:
-      - microservices-network
-    depends_on:
-      api-gateway:
-        condition: service_healthy
-    profiles:
-      - testing  # Only run when explicitly requested
 
 volumes:
   postgres_data:

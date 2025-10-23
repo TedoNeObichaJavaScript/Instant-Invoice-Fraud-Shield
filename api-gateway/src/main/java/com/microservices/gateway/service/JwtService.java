@@ -155,7 +155,6 @@ public class JwtService {
 
     public void revokeToken(String token) {
         try {
-            Claims claims = getClaimsFromToken(token);
             // Revoke in database
             jdbcTemplate.update(
                 "UPDATE jwt_tokens SET is_revoked = true, revoked_at = ? WHERE token_hash = ?",
