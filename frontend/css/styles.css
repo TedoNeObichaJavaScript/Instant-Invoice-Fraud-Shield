@@ -2998,12 +2998,12 @@ body:has(.modern-login-container) .footer {
     text-transform: uppercase;
 }
 
-.left-sidebar .validation-item .status-badge.allowed {
+.left-sidebar .validation-item .status-badge.allow {
     background: #dcfce7;
     color: #166534;
 }
 
-.left-sidebar .validation-item .status-badge.blocked {
+.left-sidebar .validation-item .status-badge.block {
     background: #fef2f2;
     color: #dc2626;
 }
