@@ -1056,17 +1056,16 @@ class PaymentFraudDetectionApp {
             <div class="validation-item clickable" data-validation-index="${index}">
                 <div class="validation-header">
                     <span class="invoice-id">${validation.invoiceId}</span>
-                    <span class="validation-type">${typeLabel}</span>
-                    <span class="risk-status ${statusClass}">
+                    <span class="status-badge ${statusClass}">
                         ${this.formatRiskStatus(riskStatus)}
                     </span>
                 </div>
+                <div class="company-name">${validation.supplierName}</div>
                 <div class="validation-details">
-                    <span class="supplier">${validation.supplierName}</span>
                     <span class="amount">${validation.amount} BGN</span>
-                    <span class="time">${validation.responseTime}ms</span>
+                    <span class="response-time">${validation.responseTime}ms</span>
                 </div>
-                <div class="validation-timestamp">
+                <div class="timestamp">
                     ${new Date(validation.timestamp).toLocaleString()}
                 </div>
             </div>

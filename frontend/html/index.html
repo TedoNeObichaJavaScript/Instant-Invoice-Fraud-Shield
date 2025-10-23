@@ -127,6 +127,62 @@
             <!-- Dashboard -->
             <section id="dashboard" class="dashboard" style="display: none;">
                 <div class="dashboard-layout">
+                    <!-- Left Sidebar - Fraud Analysis & Recent Validations -->
+                    <div class="left-sidebar">
+                        <!-- Fraud Detection Results -->
+                        <div id="results" class="results" style="display: none;">
+                            <div class="results-header">
+                                <div class="results-icon">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <h3>Fraud Analysis Results</h3>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-header">
+                                    <span class="fraud-status" id="riskStatus"></span>
+                                    <span class="risk-level" id="riskLevel"></span>
+                                </div>
+                                <div class="result-details">
+                                    <div class="result-grid">
+                                        <div class="result-column">
+                                            <p><strong>Invoice ID:</strong> <span id="resultInvoiceId"></span></p>
+                                            <p><strong>Supplier:</strong> <span id="resultSupplierName"></span></p>
+                                            <p><strong>IBAN:</strong> <span id="resultSupplierIban"></span></p>
+                                            <p><strong>Amount:</strong> <span id="resultAmount"></span> BGN</p>
+                                        </div>
+                                        <div class="result-column">
+                                            <p><strong>Risk Status:</strong> <span id="riskStatusText"></span></p>
+                                            <p><strong>Reason:</strong> <span id="reason"></span></p>
+                                            <p><strong>Transaction ID:</strong> <span id="transactionId"></span></p>
+                                            <p><strong>Manual Review:</strong> <span id="manualReview"></span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="anomalies-section">
+                                    <h4>Detected Anomalies:</h4>
+                                    <ul id="anomaliesList"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Validations -->
+                        <div class="recent-validations">
+                            <div class="recent-header">
+                                <div class="recent-icon">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <h3>Recent Payment Validations</h3>
+                            </div>
+                            <div id="recentValidations" class="validation-list">
+                                <!-- Dynamic content will be added here -->
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Main Content Area -->
                     <div class="main-content-area">
                         <div class="dashboard-header">
@@ -208,140 +264,86 @@
                             </div>
                         </div>
 
-
-                <!-- Payment Generation and Validation Form -->
-                <div class="validation-form">
-                    <div class="form-header">
-                        <div class="form-icon">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <h3>Payment Fraud Detection System</h3>
-                        <p class="form-subtitle">Generate and validate payment transactions against risky IBAN database</p>
-                    </div>
-                    
-                    <!-- Generated Payment Display -->
-                    <div id="generatedPayment" class="generated-payment" style="display: none;">
-                        <div class="payment-card">
-                            <h4>Generated Payment</h4>
-                            <div class="payment-details">
-                                <div class="payment-row">
-                                    <span class="label">Invoice ID:</span>
-                                    <span id="genInvoiceId" class="value">--</span>
+                        <!-- Payment Generation and Validation Form -->
+                        <div class="validation-form">
+                            <div class="form-header">
+                                <div class="form-icon">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
                                 </div>
-                                <div class="payment-row">
-                                    <span class="label">Amount:</span>
-                                    <span id="genAmount" class="value">--</span>
-                                </div>
-                                <div class="payment-row">
-                                    <span class="label">Supplier IBAN:</span>
-                                    <span id="genSupplierIban" class="value">--</span>
-                                </div>
-                                <div class="payment-row">
-                                    <span class="label">Supplier Name:</span>
-                                    <span id="genSupplierName" class="value">--</span>
-                                </div>
-                                <div class="payment-row">
-                                    <span class="label">Country:</span>
-                                    <span id="genSupplierCountry" class="value">--</span>
-                                </div>
-                                <div class="payment-row">
-                                    <span class="label">Purpose:</span>
-                                    <span id="genPaymentPurpose" class="value">--</span>
+                                <h3>Payment Fraud Detection System</h3>
+                                <p class="form-subtitle">Generate and validate payment transactions against risky IBAN database</p>
+                            </div>
+                            
+                            <!-- Generated Payment Display -->
+                            <div id="generatedPayment" class="generated-payment" style="display: none;">
+                                <div class="payment-card">
+                                    <h4>Generated Payment</h4>
+                                    <div class="payment-details">
+                                        <div class="payment-row">
+                                            <span class="label">Invoice ID:</span>
+                                            <span id="genInvoiceId" class="value">--</span>
+                                        </div>
+                                        <div class="payment-row">
+                                            <span class="label">Amount:</span>
+                                            <span id="genAmount" class="value">--</span>
+                                        </div>
+                                        <div class="payment-row">
+                                            <span class="label">Supplier IBAN:</span>
+                                            <span id="genSupplierIban" class="value">--</span>
+                                        </div>
+                                        <div class="payment-row">
+                                            <span class="label">Supplier Name:</span>
+                                            <span id="genSupplierName" class="value">--</span>
+                                        </div>
+                                        <div class="payment-row">
+                                            <span class="label">Country:</span>
+                                            <span id="genSupplierCountry" class="value">--</span>
+                                        </div>
+                                        <div class="payment-row">
+                                            <span class="label">Purpose:</span>
+                                            <span id="genPaymentPurpose" class="value">--</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- IBAN Status Sub-tab -->
+                                    <div class="iban-status-section">
+                                        <h5>IBAN Risk Status</h5>
+                                        <div class="iban-status-display">
+                                            <span class="label">Risk Level:</span>
+                                            <span id="genIbanRiskLevel" class="value risk-unknown">UNKNOWN</span>
+                                        </div>
+                                        <div class="iban-status-display">
+                                            <span class="label">Status:</span>
+                                            <span id="genIbanStatus" class="value status-unknown">Not Checked</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <!-- IBAN Status Sub-tab -->
-                            <div class="iban-status-section">
-                                <h5>IBAN Risk Status</h5>
-                                <div class="iban-status-display">
-                                    <span class="label">Risk Level:</span>
-                                    <span id="genIbanRiskLevel" class="value risk-unknown">UNKNOWN</span>
-                                </div>
-                                <div class="iban-status-display">
-                                    <span class="label">Status:</span>
-                                    <span id="genIbanStatus" class="value status-unknown">Not Checked</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="button-container">
-                        <button type="button" id="generatePaymentBtn" class="btn-primary">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            Generate Payment
-                        </button>
-                        
-                        <button type="button" id="validatePaymentBtn" class="btn-secondary" disabled>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            Validate Payment
-                        </button>
-                        
-                        <button type="button" id="unvalidatePaymentBtn" class="btn-danger" disabled>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                            Unvalidate Payment
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Fraud Detection Results -->
-                <div id="results" class="results" style="display: none;">
-                    <div class="results-header">
-                        <div class="results-icon">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <h3>Fraud Analysis Results</h3>
-                    </div>
-                    <div class="result-card">
-                        <div class="result-header">
-                            <span class="fraud-status" id="riskStatus"></span>
-                            <span class="risk-level" id="riskLevel"></span>
-                        </div>
-                        <div class="result-details">
-                            <div class="result-grid">
-                                <div class="result-column">
-                                    <p><strong>Invoice ID:</strong> <span id="resultInvoiceId"></span></p>
-                                    <p><strong>Supplier:</strong> <span id="resultSupplierName"></span></p>
-                                    <p><strong>IBAN:</strong> <span id="resultSupplierIban"></span></p>
-                                    <p><strong>Amount:</strong> <span id="resultAmount"></span> BGN</p>
-                                </div>
-                                <div class="result-column">
-                                    <p><strong>Risk Status:</strong> <span id="riskStatusText"></span></p>
-                                    <p><strong>Reason:</strong> <span id="reason"></span></p>
-                                    <p><strong>Transaction ID:</strong> <span id="transactionId"></span></p>
-                                    <p><strong>Manual Review:</strong> <span id="manualReview"></span></p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="anomalies-section">
-                            <h4>Detected Anomalies:</h4>
-                            <ul id="anomaliesList"></ul>
-                        </div>
-                    </div>
-                </div>
-
-                        <!-- Recent Validations -->
-                        <div class="recent-validations">
-                            <div class="recent-header">
-                                <div class="recent-icon">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <!-- Action Buttons -->
+                            <div class="button-container">
+                                <button type="button" id="generatePaymentBtn" class="btn-primary">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                     </svg>
-                                </div>
-                                <h3>Recent Payment Validations</h3>
-                            </div>
-                            <div id="recentValidations" class="validation-list">
-                                <!-- Dynamic content will be added here -->
+                                    Generate Payment
+                                </button>
+                                
+                                <button type="button" id="validatePaymentBtn" class="btn-secondary" disabled>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Validate Payment
+                                </button>
+                                
+                                <button type="button" id="unvalidatePaymentBtn" class="btn-danger" disabled>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                    Unvalidate Payment
+                                </button>
                             </div>
                         </div>
                     </div>

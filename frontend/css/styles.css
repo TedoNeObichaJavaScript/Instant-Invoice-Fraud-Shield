@@ -2792,12 +2792,280 @@ body:has(.modern-login-container) .footer {
     }
 }
 
-/* Analytics Dashboard Styles */
-.dashboard-layout {
-    display: flex;
-    gap: 1.5rem;
-    min-height: calc(100vh - 80px);
+/* Dashboard Container - Make it full width */
+.dashboard .container {
+    max-width: none;
+    width: 100%;
+    padding: 0 20px;
 }
+
+/* New Dashboard Layout - Left Sidebar + Main Content + Right Sidebar */
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 400px 1fr 400px;
+    gap: 20px;
+    min-height: calc(100vh - 80px);
+    align-items: start;
+    width: 100%;
+    max-width: none;
+    padding: 0;
+}
+
+/* Left Sidebar - Fraud Analysis & Recent Validations */
+.left-sidebar {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    min-width: 380px;
+}
+
+.left-sidebar .results {
+    margin-bottom: 24px;
+}
+
+.left-sidebar .recent-validations {
+    margin-top: 0;
+}
+
+/* Main Content Area */
+.main-content-area {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Right Sidebar - Analytics (existing) */
+.analytics-sidebar {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    min-width: 380px;
+}
+
+/* Responsive Design */
+@media (max-width: 1600px) {
+    .dashboard-layout {
+        grid-template-columns: 350px 1fr 350px;
+        gap: 18px;
+    }
+}
+
+@media (max-width: 1400px) {
+    .dashboard-layout {
+        grid-template-columns: 320px 1fr 320px;
+        gap: 16px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .dashboard-layout {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .left-sidebar,
+    .analytics-sidebar {
+        position: static;
+        max-height: none;
+        min-width: auto;
+    }
+    
+    .left-sidebar {
+        order: 2;
+    }
+    
+    .main-content-area {
+        order: 1;
+    }
+    
+    .analytics-sidebar {
+        order: 3;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-layout {
+        gap: 16px;
+    }
+    
+    .left-sidebar,
+    .analytics-sidebar {
+        padding: 16px;
+    }
+}
+
+/* Left Sidebar Specific Styles */
+.left-sidebar .results-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.left-sidebar .results-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--primary-600);
+}
+
+.left-sidebar .results-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.left-sidebar .recent-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.left-sidebar .recent-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--primary-600);
+}
+
+.left-sidebar .recent-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+/* Ensure proper spacing in left sidebar */
+.left-sidebar .result-card {
+    margin-bottom: 0;
+}
+
+.left-sidebar .validation-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Improve Recent Payment Validations styling */
+.left-sidebar .validation-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.left-sidebar .validation-item:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.left-sidebar .validation-item .validation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.left-sidebar .validation-item .invoice-id {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 14px;
+}
+
+.left-sidebar .validation-item .status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.left-sidebar .validation-item .status-badge.allowed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.left-sidebar .validation-item .status-badge.blocked {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.left-sidebar .validation-item .status-badge.review {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.left-sidebar .validation-item .company-name {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.left-sidebar .validation-item .validation-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.left-sidebar .validation-item .amount {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.left-sidebar .validation-item .response-time {
+    color: #9ca3af;
+}
+
+.left-sidebar .validation-item .timestamp {
+    color: #9ca3af;
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+/* Smooth scrolling for sidebars */
+.left-sidebar::-webkit-scrollbar,
+.analytics-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.left-sidebar::-webkit-scrollbar-track,
+.analytics-sidebar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.left-sidebar::-webkit-scrollbar-thumb,
+.analytics-sidebar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.left-sidebar::-webkit-scrollbar-thumb:hover,
+.analytics-sidebar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
 
 .main-content-area {
     flex: 1;
