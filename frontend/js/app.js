@@ -68,7 +68,7 @@ class PaymentFraudDetectionApp {
         // Payment generation and validation buttons
         const generateBtn = document.getElementById('generatePaymentBtn');
         const validateBtn = document.getElementById('validatePaymentBtn');
-        const unvalidateBtn = document.getElementById('unvalidatePaymentBtn');
+        const rejectBtn = document.getElementById('rejectPaymentBtn');
 
         if (generateBtn) {
             generateBtn.addEventListener('click', () => this.generatePayment());
@@ -76,8 +76,14 @@ class PaymentFraudDetectionApp {
         if (validateBtn) {
             validateBtn.addEventListener('click', () => this.validatePayment());
         }
-        if (unvalidateBtn) {
-            unvalidateBtn.addEventListener('click', () => this.unvalidatePayment());
+        if (rejectBtn) {
+            console.log('Setting up reject button event listener');
+            rejectBtn.addEventListener('click', () => {
+                console.log('Reject button clicked');
+                this.rejectPayment();
+            });
+        } else {
+            console.error('rejectPaymentBtn not found in DOM');
         }
     }
 
@@ -243,7 +249,7 @@ class PaymentFraudDetectionApp {
             };
 
             this.displayGeneratedPayment();
-            this.enableButtons(['validatePaymentBtn', 'unvalidatePaymentBtn']);
+            this.enableButtons(['validatePaymentBtn', 'rejectPaymentBtn']);
             
             // Automatically perform fraud check after generation
             await this.performFraudCheck();
@@ -272,7 +278,7 @@ class PaymentFraudDetectionApp {
         };
 
         this.displayGeneratedPayment();
-        this.enableButtons(['validatePaymentBtn', 'unvalidatePaymentBtn']);
+        this.enableButtons(['validatePaymentBtn', 'rejectPaymentBtn']);
         
         // Automatically perform fraud check for fallback method too
         await this.performFraudCheck();
@@ -614,12 +620,63 @@ class PaymentFraudDetectionApp {
         }
     }
 
-    unvalidatePayment() {
-        this.currentPayment = null;
-        document.getElementById('generatedPayment').style.display = 'none';
-        document.getElementById('results').style.display = 'none';
-        this.resetButtons();
-        this.showMessage('Payment unvalidated and cleared', 'info');
+    async rejectPayment() {
+        console.log('=== REJECT PAYMENT CALLED ===');
+        console.log('Current payment:', this.currentPayment);
+        console.log('Current payment riskStatus:', this.currentPayment?.riskStatus);
+        
+        if (!this.currentPayment) {
+            this.showMessage('No payment to reject. Please generate a payment first.', 'error');
+            return;
+        }
+
+        // Check if payment is in REVIEW status - don't allow manual rejection
+        if (this.currentPayment.riskStatus === 'REVIEW') {
+            console.log('❌ Payment is in REVIEW status, blocking manual rejection');
+            this.showMessage('Payment is under review. Please wait for the review decision.', 'warning');
+            return;
+        }
+
+        try {
+            const startTime = Date.now();
+            
+            // Simulate payment rejection - always block/reject the payment
+            const rejectionResult = {
+                valid: false,
+                riskLevel: this.currentPayment.riskLevel || 'HIGH',
+                message: 'Payment rejected and blocked'
+            };
+            
+            const responseTime = Date.now() - startTime;
+            
+            // Update IBAN status display to show "Blocked" status
+            this.updateIbanStatusDisplay(rejectionResult.riskLevel, 'Blocked');
+            
+            this.showMessage(`Payment rejected and blocked in ${responseTime}ms`, 'error');
+            
+            // Update stats with proper risk status
+            const riskStatus = 'BLOCK'; // Always block for rejection
+            this.updateStats(responseTime, false, riskStatus);
+            
+            // Save to recent validations
+            this.saveValidation({
+                ...this.currentPayment,
+                result: {
+                    riskStatus: 'BLOCK',
+                    riskLevel: rejectionResult.riskLevel,
+                    reason: 'Payment manually rejected and blocked',
+                    requiresManualReview: false
+                },
+                responseTime: responseTime,
+                timestamp: new Date().toISOString(),
+                validationType: 'manual_rejection'
+            });
+            
+            this.loadRecentValidations();
+            
+        } catch (error) {
+            this.showMessage('Payment rejection failed', 'error');
+        }
     }
 
     async simulatePaymentValidation() {
@@ -1015,8 +1072,18 @@ class PaymentFraudDetectionApp {
         });
     }
 
+    disableButtons(buttonIds) {
+        buttonIds.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('disabled');
+            }
+        });
+    }
+
     resetButtons() {
-        const buttons = ['validatePaymentBtn', 'unvalidatePaymentBtn'];
+        const buttons = ['validatePaymentBtn', 'rejectPaymentBtn'];
         buttons.forEach(id => {
             const btn = document.getElementById(id);
             if (btn) {
