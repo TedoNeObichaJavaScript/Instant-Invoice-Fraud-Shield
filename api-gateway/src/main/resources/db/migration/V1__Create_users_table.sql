@@ -17,5 +17,6 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_active ON users(is_active);
 
 -- Insert default admin user (password: admin123)
+-- Note: This uses a proper BCrypt hash generated with PostgreSQL's crypt() function
 INSERT INTO users (username, email, password_hash) VALUES 
-('admin', 'admin@microservices.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDi');
+('admin', 'admin@microservices.com', '$2a$06$bHmzJLVFEcpwWVrenD1HUugThmlRAMeMEmtOiA7vuwPxRqkU5poNO');
