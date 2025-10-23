@@ -244,8 +244,10 @@ class PaymentFraudDetectionApp {
                 supplierCountry: 'Bulgaria',
                 paymentPurpose: this.generateRandomPurpose(),
                 riskLevel: ibanData[0].riskLevel, // Get actual risk level from database
+                originalRiskLevel: ibanData[0].riskLevel, // Preserve original risk level
                 generatedAt: new Date().toISOString(),
-                validationUsed: false // Track if validation has been used
+                validationUsed: false, // Track if validation has been used
+                currentFraudStatus: null // Track current fraud status for this payment
             };
 
             this.displayGeneratedPayment();
@@ -514,10 +516,11 @@ class PaymentFraudDetectionApp {
             
             this.showMessage(`Payment accepted and validated in ${responseTime}ms`, 'success');
             
-            // Update stats with proper risk status - reset statsUpdated flag first
-            this.statsUpdated = false;
+            // Update fraud stats only (not total payments)
             const riskStatus = 'ALLOW'; // Always allow for validation
-            this.updateStats(responseTime, true, riskStatus);
+            const previousStatus = this.currentPayment.currentFraudStatus;
+            this.updateFraudStats(riskStatus, previousStatus);
+            this.currentPayment.currentFraudStatus = riskStatus; // Update current status
             
             if (existingValidation) {
                 // Update existing validation entry
@@ -594,7 +597,11 @@ class PaymentFraudDetectionApp {
                 
                 // Update current payment with fraud check result
                 this.currentPayment.riskStatus = result.riskStatus;
-                this.currentPayment.riskLevel = result.riskLevel;
+                this.currentPayment.currentFraudStatus = result.riskStatus; // Track fraud status
+                // Preserve original risk level - don't overwrite with REVIEW
+                if (result.riskLevel !== 'REVIEW') {
+                    this.currentPayment.riskLevel = result.riskLevel;
+                }
                 
                 // Update IBAN status display based on fraud check result
                 this.updateIbanStatusDisplay(result.riskLevel, result.riskStatus);
@@ -651,12 +658,6 @@ class PaymentFraudDetectionApp {
             return;
         }
 
-        // Check if validation has already been used for this payment
-        if (this.currentPayment.validationUsed) {
-            this.showMessage('Payment already processed. Generate a new payment to reject again.', 'warning');
-            return;
-        }
-
         // Check if there's already a validation entry for this payment and update it instead of creating new one
         const existingValidation = this.validations.find(v => 
             v.invoiceId === this.currentPayment.invoiceId && 
@@ -682,18 +683,16 @@ class PaymentFraudDetectionApp {
             
             const responseTime = Date.now() - startTime;
             
-            // Mark validation as used
-            this.currentPayment.validationUsed = true;
-            
             // Update IBAN status display to show "BLOCK" status
             this.updateIbanStatusDisplay(rejectionResult.riskLevel, 'BLOCK');
             
             this.showMessage(`Payment rejected and blocked in ${responseTime}ms`, 'error');
             
-            // Update stats with proper risk status - reset statsUpdated flag first
-            this.statsUpdated = false;
+            // Update fraud stats only (not total payments)
             const riskStatus = 'BLOCK'; // Always block for rejection
-            this.updateStats(responseTime, false, riskStatus);
+            const previousStatus = this.currentPayment.currentFraudStatus;
+            this.updateFraudStats(riskStatus, previousStatus);
+            this.currentPayment.currentFraudStatus = riskStatus; // Update current status
             
             if (existingValidation) {
                 // Update existing validation entry
@@ -869,6 +868,28 @@ class PaymentFraudDetectionApp {
         }
     }
 
+    mapDatabaseRiskToSystemRisk(dbRiskLevel) {
+        // Map database risk levels to system risk levels
+        switch (dbRiskLevel) {
+            case 'LOW':
+                return 'ALLOW';
+            case 'MEDIUM':
+                return 'REVIEW';
+            case 'HIGH':
+                return 'REVIEW';
+            case 'BLOCKED':
+                return 'BLOCK';
+            case 'BLOCK':
+                return 'BLOCK';
+            case 'REVIEW':
+                return 'REVIEW';
+            case 'ALLOW':
+                return 'ALLOW';
+            default:
+                return 'REVIEW'; // Default to REVIEW for unknown levels
+        }
+    }
+
     showManualReviewPrompt(result) {
         // Reset the click flag for this new modal
         this.reviewModalClicked = false;
@@ -886,21 +907,108 @@ class PaymentFraudDetectionApp {
         reviewModal.className = 'review-modal';
         reviewModal.innerHTML = `
             <div class="review-content">
-                <h3>Manual Review Required</h3>
-                <p>This payment has been flagged for manual review due to medium risk factors.</p>
-                <div class="review-details">
-                    <p><strong>IBAN:</strong> ${result.supplierIban || this.currentPayment.supplierIban}</p>
-                    <p><strong>Amount:</strong> ${result.amount || this.currentPayment.amount} BGN</p>
-                    <p><strong>Reason:</strong> ${result.reason || 'Medium risk detected'}</p>
+                <div class="review-header">
+                    <h3>🔍 Manual Review Required</h3>
+                    <p class="review-subtitle">This payment requires human decision due to risk factors</p>
                 </div>
+                
+                <div class="review-sections">
+                    <!-- Payment Information -->
+                    <div class="review-section">
+                        <h4>📋 Payment Details</h4>
+                        <div class="review-grid">
+                            <div class="review-item">
+                                <span class="label">Invoice ID:</span>
+                                <span class="value">${result.invoiceId || this.currentPayment.invoiceId}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="label">Amount:</span>
+                                <span class="value">${result.amount || this.currentPayment.amount} BGN</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="label">Supplier:</span>
+                                <span class="value">${result.supplierName || this.currentPayment.supplierName}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="label">IBAN:</span>
+                                <span class="value">${result.supplierIban || this.currentPayment.supplierIban}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="label">Country:</span>
+                                <span class="value">${this.currentPayment.supplierCountry || 'Bulgaria'}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="label">Purpose:</span>
+                                <span class="value">${this.currentPayment.paymentPurpose || 'Payment processing'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Risk Analysis -->
+                    <div class="review-section">
+                        <h4>⚠️ Risk Analysis</h4>
+                        <div class="review-grid">
+                            <div class="review-item">
+                                <span class="label">Risk Level:</span>
+                                <span class="value risk-${this.mapDatabaseRiskToSystemRisk(this.currentPayment.originalRiskLevel || this.currentPayment.riskLevel || 'MEDIUM').toLowerCase()}">${this.mapDatabaseRiskToSystemRisk(this.currentPayment.originalRiskLevel || this.currentPayment.riskLevel || 'MEDIUM')}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="label">Risk Status:</span>
+                                <span class="value status-${(result.riskStatus || 'REVIEW').toLowerCase()}">${result.riskStatus || 'REVIEW'}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="label">Transaction ID:</span>
+                                <span class="value">${result.transactionId || 'N/A'}</span>
+                            </div>
+                            <div class="review-item">
+                                <span class="label">Generated:</span>
+                                <span class="value">${new Date(this.currentPayment.generatedAt).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detection Details -->
+                    <div class="review-section">
+                        <h4>🔍 Detection Details</h4>
+                        <div class="review-item full-width">
+                            <span class="label">Reason:</span>
+                            <span class="value">${result.reason || 'Medium risk factors detected'}</span>
+                        </div>
+                        <div class="review-item full-width">
+                            <span class="label">Recommendation:</span>
+                            <span class="value">${result.recommendation || 'Manual review required'}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Anomalies -->
+                    ${result.anomalies && result.anomalies.length > 0 ? `
+                    <div class="review-section">
+                        <h4>🚨 Detected Anomalies</h4>
+                        <ul class="anomalies-list">
+                            ${result.anomalies.map(anomaly => `<li>${anomaly}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                </div>
+                
                 <div class="review-actions">
-                    <button id="approveBtn" class="btn-primary">Approve</button>
-                    <button id="rejectBtn" class="btn-danger">Reject</button>
+                    <button id="approveBtn" class="btn-primary">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Approve Payment
+                    </button>
+                    <button id="rejectBtn" class="btn-danger">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Reject Payment
+                    </button>
                 </div>
             </div>
         `;
         
-        // Add modal styles - SIMPLIFIED, NO TRANSITIONS
+        // Add modal styles - ENHANCED FOR COMPREHENSIVE REVIEW
         const style = document.createElement('style');
         style.textContent = `
             .review-modal {
@@ -909,36 +1017,130 @@ class PaymentFraudDetectionApp {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(0, 0, 0, 0.7);
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 z-index: 1000;
+                padding: 1rem;
             }
             .review-content {
                 background: white;
                 padding: 2rem;
+                border-radius: 12px;
+                max-width: 800px;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                width: 100%;
+            }
+            .review-header {
+                text-align: center;
+                margin-bottom: 2rem;
+                padding-bottom: 1rem;
+                border-bottom: 2px solid #e5e7eb;
+            }
+            .review-header h3 {
+                margin: 0 0 0.5rem 0;
+                color: #1f2937;
+                font-size: 1.5rem;
+            }
+            .review-subtitle {
+                margin: 0;
+                color: #6b7280;
+                font-size: 0.9rem;
+            }
+            .review-sections {
+                margin-bottom: 2rem;
+            }
+            .review-section {
+                margin-bottom: 1.5rem;
+                padding: 1rem;
+                background: #f9fafb;
                 border-radius: 8px;
-                max-width: 500px;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+                border-left: 4px solid #3b82f6;
+            }
+            .review-section h4 {
+                margin: 0 0 1rem 0;
+                color: #1f2937;
+                font-size: 1.1rem;
+                font-weight: 600;
+            }
+            .review-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 0.75rem;
+            }
+            .review-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.5rem 0;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            .review-item.full-width {
+                grid-column: 1 / -1;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+            .review-item .label {
+                font-weight: 600;
+                color: #374151;
+                min-width: 120px;
+            }
+            .review-item .value {
+                color: #1f2937;
+                font-family: 'Courier New', monospace;
+                font-size: 0.9rem;
+                word-break: break-all;
+            }
+            .anomalies-list {
+                margin: 0;
+                padding-left: 1.5rem;
+                color: #dc2626;
+            }
+            .anomalies-list li {
+                margin-bottom: 0.5rem;
+                font-size: 0.9rem;
             }
             .review-actions {
                 display: flex;
                 gap: 1rem;
-                margin-top: 1rem;
+                margin-top: 2rem;
+                padding-top: 1rem;
+                border-top: 2px solid #e5e7eb;
             }
             .review-actions button {
-                padding: 0.75rem 1.5rem;
+                padding: 0.875rem 1.5rem;
                 border: none;
-                border-radius: 0.5rem;
+                border-radius: 8px;
                 font-weight: 600;
                 cursor: pointer;
                 flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                font-size: 1rem;
+                transition: all 0.2s ease;
+            }
+            .review-actions button:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             }
             .review-actions button:disabled {
                 opacity: 0.6;
                 cursor: not-allowed;
                 pointer-events: none;
+            }
+            .btn-primary {
+                background: #10b981;
+                color: white;
+            }
+            .btn-danger {
+                background: #ef4444;
+                color: white;
             }
         `;
         document.head.appendChild(style);
@@ -979,9 +1181,10 @@ class PaymentFraudDetectionApp {
                 
                 this.showMessage('Payment approved after manual review - Status: GOOD', 'success');
                 
-                // Reset stats flag to allow update for review decision
-                this.statsUpdated = false;
-                this.updateStats(0, true, 'ALLOW');
+                // Update stats for review decision (increment total payments)
+                this.stats.totalPayments++;
+                this.updateFraudStats('ALLOW');
+                this.currentPayment.currentFraudStatus = 'ALLOW';
                 this.updateIbanStatusDisplay('GOOD', 'ALLOW');
 
                 // Update the fraud analysis results display
@@ -1040,9 +1243,10 @@ class PaymentFraudDetectionApp {
                 
                 this.showMessage('Payment rejected after manual review - Status: BLOCK', 'error');
                 
-                // Reset stats flag to allow update for review decision
-                this.statsUpdated = false;
-                this.updateStats(0, false, 'BLOCK');
+                // Update stats for review decision (increment total payments)
+                this.stats.totalPayments++;
+                this.updateFraudStats('BLOCK');
+                this.currentPayment.currentFraudStatus = 'BLOCK';
                 this.updateIbanStatusDisplay('BLOCK', 'BLOCK');
 
                 // Update the fraud analysis results display
@@ -1147,6 +1351,7 @@ class PaymentFraudDetectionApp {
     }
 
     updateStats(responseTime, success, riskStatus = null) {
+        // This function is ONLY called when a new payment is generated
         // Prevent duplicate stat updates for the same payment
         if (this.statsUpdated) {
             console.log('Stats already updated for this payment, skipping duplicate update');
@@ -1154,7 +1359,7 @@ class PaymentFraudDetectionApp {
         }
         
         this.statsUpdated = true; // Mark as updated
-        this.stats.totalPayments++;
+        this.stats.totalPayments++; // Only increment when generating new payment
         
         // Increment fraud detected only for actual fraud cases (BLOCK only)
         // REVIEW payments should NOT count as fraud until they are rejected
@@ -1176,6 +1381,39 @@ class PaymentFraudDetectionApp {
         this.stats.successRate = Math.round(
             ((this.stats.totalPayments - this.stats.fraudDetected) / this.stats.totalPayments) * 100
         );
+        
+        this.updateStatsDisplay();
+    }
+
+    updateFraudStats(riskStatus, previousStatus = null) {
+        // This function is called when validate/reject buttons are clicked
+        // It only updates fraud count, NOT total payments
+        // It tracks changes per payment to prevent spamming
+        
+        if (riskStatus === 'BLOCK') {
+            // Only increment if this payment wasn't already blocked
+            if (previousStatus !== 'BLOCK') {
+                this.stats.fraudDetected++;
+                this.stats.blockedPayments = (this.stats.blockedPayments || 0) + 1;
+            }
+        } else if (riskStatus === 'ALLOW') {
+            // Only decrement if this payment was previously blocked
+            if (previousStatus === 'BLOCK') {
+                if (this.stats.fraudDetected > 0) {
+                    this.stats.fraudDetected--;
+                }
+                if (this.stats.blockedPayments > 0) {
+                    this.stats.blockedPayments--;
+                }
+            }
+        }
+        
+        // Update success rate
+        if (this.stats.totalPayments > 0) {
+            this.stats.successRate = Math.round(
+                ((this.stats.totalPayments - this.stats.fraudDetected) / this.stats.totalPayments) * 100
+            );
+        }
         
         this.updateStatsDisplay();
     }
