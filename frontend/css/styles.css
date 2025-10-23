@@ -751,67 +751,6 @@ body {
     height: 20px;
 }
 
-.modern-login-footer {
-    margin-top: 2.5rem;
-    position: relative;
-    z-index: 1;
-}
-
-.divider {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    position: relative;
-}
-
-.divider::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.divider span {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0 1rem;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9rem;
-    position: relative;
-}
-
-.social-login {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-}
-
-.social-btn {
-    width: 56px;
-    height: 56px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-}
-
-.social-btn:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-.social-icon {
-    width: 24px;
-    height: 24px;
-}
 
 .user-info {
     display: flex;
