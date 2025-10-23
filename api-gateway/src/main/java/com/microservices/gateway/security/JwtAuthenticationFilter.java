@@ -34,15 +34,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
                                   FilterChain filterChain) throws ServletException, IOException {
         
-        System.out.println("JWT Filter processing request: " + request.getRequestURI());
-        logger.info("JWT Filter processing request: " + request.getRequestURI());
+        logger.debug("JWT Filter processing request: {}", request.getRequestURI());
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String username;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("No valid Authorization header found for: " + request.getRequestURI());
-            logger.info("No valid Authorization header found");
+            logger.debug("No valid Authorization header found for: {}", request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }

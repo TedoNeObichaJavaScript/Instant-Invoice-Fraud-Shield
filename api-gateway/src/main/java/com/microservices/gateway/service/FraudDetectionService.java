@@ -2,6 +2,8 @@ package com.microservices.gateway.service;
 
 import com.microservices.gateway.model.FraudDetectionRequest;
 import com.microservices.gateway.model.FraudDetectionResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.UUID;
 @Service
 public class FraudDetectionService {
 
+    private static final Logger logger = LoggerFactory.getLogger(FraudDetectionService.class);
     private final JdbcTemplate jdbcTemplate;
     private final RestTemplate restTemplate;
     private final String accountsServiceUrl;
@@ -41,9 +44,9 @@ public class FraudDetectionService {
 
         try {
             // 1. Check IBAN in database first
-            System.out.println("DEBUG: Analyzing payment for IBAN: " + request.getSupplierIban());
+            logger.debug("Analyzing payment for IBAN: {}", maskIban(request.getSupplierIban()));
             String dbRiskLevel = getIbanRiskLevel(request.getSupplierIban());
-            System.out.println("DEBUG: Database returned risk level: " + dbRiskLevel);
+            logger.debug("Database returned risk level: {}", dbRiskLevel != null ? "***" : "null");
             
             if (dbRiskLevel != null) {
                 switch (dbRiskLevel) {
@@ -53,7 +56,7 @@ public class FraudDetectionService {
                         reason = "IBAN is flagged as blocked in database";
                         anomalies.add("IBAN found in blocked IBANs database");
                         requiresManualReview = true;
-                        System.out.println("DEBUG: Setting BLOCK status");
+                        logger.debug("Setting BLOCK status for payment");
                         break;
                     case "REVIEW":
                         riskStatus = "REVIEW";
@@ -61,13 +64,13 @@ public class FraudDetectionService {
                         reason = "IBAN requires manual review";
                         anomalies.add("IBAN flagged for review in database");
                         requiresManualReview = true;
-                        System.out.println("DEBUG: Setting REVIEW status");
+                        logger.debug("Setting REVIEW status for payment");
                         break;
                     case "GOOD":
                         riskStatus = "ALLOW";
                         riskLevel = "GOOD";
                         reason = "IBAN verified as good in database";
-                        System.out.println("DEBUG: Setting ALLOW status");
+                        logger.debug("Setting ALLOW status for payment");
                         break;
                     default:
                         // Unknown risk level, treat as review
@@ -76,7 +79,7 @@ public class FraudDetectionService {
                         reason = "IBAN has unknown risk level in database";
                         anomalies.add("IBAN has unknown risk classification");
                         requiresManualReview = true;
-                        System.out.println("DEBUG: Setting REVIEW status for unknown risk level: " + dbRiskLevel);
+                        logger.debug("Setting REVIEW status for unknown risk level");
                         break;
                 }
             } else {
@@ -196,10 +199,10 @@ public class FraudDetectionService {
         try {
             String sql = "SELECT risk_level FROM risk.iban_risk_lookup WHERE iban = ?";
             String result = jdbcTemplate.queryForObject(sql, String.class, iban);
-            System.out.println("DEBUG: Found IBAN " + iban + " with risk level: " + result);
+            logger.debug("Found IBAN {} with risk level: {}", maskIban(iban), result != null ? "***" : "null");
             return result;
         } catch (Exception e) {
-            System.out.println("DEBUG: Error querying IBAN " + iban + ": " + e.getMessage());
+            logger.debug("Error querying IBAN {}: {}", maskIban(iban), e.getMessage());
             // If database error or IBAN not found, return null
             return null;
         }
@@ -436,5 +439,16 @@ public class FraudDetectionService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Masks sensitive IBAN data for logging purposes
+     * Shows only first 4 and last 4 characters
+     */
+    private String maskIban(String iban) {
+        if (iban == null || iban.length() < 8) {
+            return "****";
+        }
+        return iban.substring(0, 4) + "****" + iban.substring(iban.length() - 4);
     }
 }
