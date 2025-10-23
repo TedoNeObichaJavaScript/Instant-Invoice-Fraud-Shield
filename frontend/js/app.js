@@ -214,7 +214,7 @@ class PaymentFraudDetectionApp {
             
             this.currentPayment = {
                 invoiceId: `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                amount: parseFloat((Math.random() * 50000 + 100).toFixed(2)),
+                amount: this.generateAmountByRiskLevel(ibanData[0].riskLevel),
                 supplierIban: ibanData[0].iban,
                 supplierName: this.generateRandomSupplierName(),
                 supplierCountry: 'Bulgaria',
@@ -243,7 +243,7 @@ class PaymentFraudDetectionApp {
         
         this.currentPayment = {
             invoiceId: `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-            amount: parseFloat((Math.random() * 50000 + 100).toFixed(2)),
+            amount: this.generateAmountByRiskLevel(randomRisk),
             supplierIban: ibans[0],
             supplierName: this.generateRandomSupplierName(),
             supplierCountry: 'Bulgaria',
@@ -358,6 +358,40 @@ class PaymentFraudDetectionApp {
             'Monthly subscription'
         ];
         return purposes[Math.floor(Math.random() * purposes.length)];
+    }
+
+    generateAmountByRiskLevel(riskLevel) {
+        if (riskLevel === 'GOOD') {
+            // GOOD payments: Rounded amounts (1000.00, 5000.00, 15000.00, etc.)
+            const roundedAmounts = [
+                1000.00, 2000.00, 3000.00, 5000.00, 7500.00, 10000.00,
+                12500.00, 15000.00, 20000.00, 25000.00, 30000.00, 35000.00,
+                40000.00, 45000.00, 50000.00
+            ];
+            return roundedAmounts[Math.floor(Math.random() * roundedAmounts.length)];
+        } else if (riskLevel === 'REVIEW') {
+            // REVIEW payments: Sometimes suspicious amounts, sometimes normal
+            if (Math.random() < 0.3) {
+                // 30% chance of suspicious amounts
+                const suspiciousAmounts = [
+                    1234.56, 9999.99, 12345.67, 23456.78, 34567.89,
+                    45678.90, 56789.01, 67890.12, 78901.23, 89012.34
+                ];
+                return suspiciousAmounts[Math.floor(Math.random() * suspiciousAmounts.length)];
+            } else {
+                // 70% chance of normal amounts
+                return parseFloat((Math.random() * 30000 + 500).toFixed(2));
+            }
+        } else {
+            // BLOCK payments: Very suspicious amounts
+            const suspiciousAmounts = [
+                0.01, 0.99, 1.23, 9.99, 99.99, 123.45, 999.99,
+                1234.56, 9999.99, 12345.67, 23456.78, 34567.89,
+                45678.90, 56789.01, 67890.12, 78901.23, 89012.34,
+                99999.99, 100000.00, 150000.00, 200000.00
+            ];
+            return suspiciousAmounts[Math.floor(Math.random() * suspiciousAmounts.length)];
+        }
     }
 
     displayGeneratedPayment() {

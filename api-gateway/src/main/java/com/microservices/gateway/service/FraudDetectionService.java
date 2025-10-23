@@ -272,11 +272,6 @@ public class FraudDetectionService {
      * Check for suspicious payment patterns
      */
     private boolean hasSuspiciousPatterns(FraudDetectionRequest request) {
-        // Check for round numbers (potential test payments)
-        if (request.getAmount().remainder(BigDecimal.valueOf(1000)).compareTo(BigDecimal.ZERO) == 0) {
-            return true;
-        }
-        
         // Check for very small amounts (potential test)
         if (request.getAmount().compareTo(BigDecimal.valueOf(1)) < 0) {
             return true;
@@ -287,14 +282,24 @@ public class FraudDetectionService {
             return true;
         }
         
-        // Check for suspicious amount patterns
-        if (request.getAmount().remainder(BigDecimal.valueOf(100)).compareTo(BigDecimal.ZERO) == 0) {
-            return true; // Round hundreds
-        }
-        
         // Check for amounts ending in .99 (common fraud pattern)
         if (request.getAmount().toString().endsWith(".99")) {
             return true;
+        }
+        
+        // Check for suspicious amount patterns (but not for GOOD IBANs)
+        // GOOD IBANs are expected to have rounded amounts, so don't flag them
+        String ibanRiskLevel = getIbanRiskLevel(request.getSupplierIban());
+        if (!"GOOD".equals(ibanRiskLevel)) {
+            // Check for round numbers (potential test payments) - only for non-GOOD IBANs
+            if (request.getAmount().remainder(BigDecimal.valueOf(1000)).compareTo(BigDecimal.ZERO) == 0) {
+                return true;
+            }
+            
+            // Check for suspicious amount patterns - only for non-GOOD IBANs
+            if (request.getAmount().remainder(BigDecimal.valueOf(100)).compareTo(BigDecimal.ZERO) == 0) {
+                return true; // Round hundreds
+            }
         }
         
         return false;
