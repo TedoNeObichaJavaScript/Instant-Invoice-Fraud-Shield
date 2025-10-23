@@ -559,7 +559,11 @@ class PaymentFraudDetectionApp {
                 // Show the appropriate message based on result
                 this.handleAutoDetection(result.riskStatus, result.riskLevel, result);
                 
-                this.updateStats(responseTime, true, result.riskStatus);
+                // Only update stats for non-REVIEW payments
+                // REVIEW payments will be counted when final decision is made
+                if (result.riskStatus !== 'REVIEW') {
+                    this.updateStats(responseTime, true, result.riskStatus);
+                }
                 
                 // Update current payment with fraud check result
                 this.currentPayment.riskStatus = result.riskStatus;
@@ -864,6 +868,9 @@ class PaymentFraudDetectionApp {
                 this.currentPayment.finalStatus = 'ALLOW';
                 
                 this.showMessage('Payment approved after manual review - Status: GOOD', 'success');
+                
+                // Reset stats flag to allow update for review decision
+                this.statsUpdated = false;
                 this.updateStats(0, true, 'ALLOW');
                 this.updateIbanStatusDisplay('GOOD', 'ALLOW');
 
@@ -922,6 +929,9 @@ class PaymentFraudDetectionApp {
                 this.currentPayment.finalStatus = 'BLOCK';
                 
                 this.showMessage('Payment rejected after manual review - Status: BLOCK', 'error');
+                
+                // Reset stats flag to allow update for review decision
+                this.statsUpdated = false;
                 this.updateStats(0, false, 'BLOCK');
                 this.updateIbanStatusDisplay('BLOCK', 'BLOCK');
 
@@ -1026,8 +1036,9 @@ class PaymentFraudDetectionApp {
         this.statsUpdated = true; // Mark as updated
         this.stats.totalPayments++;
         
-        // Increment fraud detected only for actual fraud cases (BLOCK or REVIEW)
-        if (riskStatus === 'BLOCK' || riskStatus === 'REVIEW') {
+        // Increment fraud detected only for actual fraud cases (BLOCK only)
+        // REVIEW payments should NOT count as fraud until they are rejected
+        if (riskStatus === 'BLOCK') {
             this.stats.fraudDetected++;
         }
         
