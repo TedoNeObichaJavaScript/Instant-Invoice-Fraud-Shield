@@ -2601,5 +2601,5 @@ class PaymentFraudDetectionApp {
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new PaymentFraudDetectionApp();
+    window.paymentApp = new PaymentFraudDetectionApp();
 });
