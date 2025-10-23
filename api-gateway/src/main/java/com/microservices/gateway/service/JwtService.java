@@ -31,11 +31,13 @@ public class JwtService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final SecretKey secretKey;
     private final long jwtExpiration;
+    private final long jwtRefreshExpiration;
 
     public JwtService(JdbcTemplate jdbcTemplate, 
                       RedisTemplate<String, Object> redisTemplate,
                       @Value("${jwt.secret}") String secret,
-                      @Value("${jwt.expiration}") long jwtExpiration) {
+                      @Value("${jwt.expiration}") long jwtExpiration,
+                      @Value("${jwt.refresh-expiration}") long jwtRefreshExpiration) {
         this.jdbcTemplate = jdbcTemplate;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = new BCryptPasswordEncoder();
@@ -51,6 +53,7 @@ public class JwtService {
         }
         this.secretKey = tempSecretKey;
         this.jwtExpiration = jwtExpiration;
+        this.jwtRefreshExpiration = jwtRefreshExpiration;
     }
 
     public String generateToken(User user) {
@@ -71,6 +74,30 @@ public class JwtService {
         
         // Store token in Redis for fast validation
         storeTokenInRedis(token, user.getId(), jwtExpiration);
+
+        return token;
+    }
+
+    public String generateToken(User user, boolean rememberMe) {
+        Date now = new Date();
+        long expirationTime = rememberMe ? jwtRefreshExpiration : jwtExpiration;
+        Date expiryDate = new Date(now.getTime() + expirationTime);
+
+        String token = Jwts.builder()
+                .setSubject(user.getId().toString())
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .claim("username", user.getUsername())
+                .claim("email", user.getEmail())
+                .claim("rememberMe", rememberMe)
+                .signWith(secretKey, SignatureAlgorithm.HS512)
+                .compact();
+
+        // Store token in database
+        storeTokenInDatabase(user.getId(), token, expiryDate);
+        
+        // Store token in Redis for fast validation
+        storeTokenInRedis(token, user.getId(), expirationTime);
 
         return token;
     }

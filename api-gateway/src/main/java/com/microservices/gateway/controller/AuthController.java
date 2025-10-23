@@ -30,6 +30,10 @@ public class AuthController {
                                                      HttpServletRequest request) {
         long startTime = System.currentTimeMillis();
         
+        // Debug logging
+        System.out.println("DEBUG: LoginRequest - username: " + loginRequest.getUsername() + 
+                          ", rememberMe: " + loginRequest.isRememberMe());
+        
         try {
             User user = jwtService.authenticateUser(loginRequest.getUsername(), loginRequest.getPassword());
             
@@ -45,7 +49,7 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
 
-            String token = jwtService.generateToken(user);
+            String token = jwtService.generateToken(user, loginRequest.isRememberMe());
             
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);

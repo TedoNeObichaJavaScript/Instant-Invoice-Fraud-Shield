@@ -86,6 +86,7 @@ class PaymentFraudDetectionApp {
         
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
+        const rememberMe = document.getElementById('rememberMe').checked;
         
         try {
             const response = await fetch(`${this.apiBaseUrl}/auth/login`, {
@@ -93,7 +94,7 @@ class PaymentFraudDetectionApp {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password, rememberMe })
             });
 
             if (response.ok) {
