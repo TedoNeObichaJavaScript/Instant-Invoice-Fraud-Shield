@@ -6,6 +6,8 @@
     <title>Instant Invoice: Fraud Shield</title>
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Chart.js for interactive charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -124,84 +126,88 @@
         <div class="container">
             <!-- Dashboard -->
             <section id="dashboard" class="dashboard" style="display: none;">
-                <div class="dashboard-header">
-                    <h2>Payment Fraud Detection Dashboard</h2>
-                    <p class="dashboard-subtitle">Monitor and validate supplier payments in real-time</p>
-                    <div class="stats">
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div class="stat-content">
-                                <h3>Avg Response Time</h3>
-                                <span id="avgResponseTime">--</span>
-                                <small>milliseconds</small>
+                <div class="dashboard-layout">
+                    <!-- Main Content Area -->
+                    <div class="main-content-area">
+                        <div class="dashboard-header">
+                            <h2>Payment Fraud Detection Dashboard</h2>
+                            <p class="dashboard-subtitle">Monitor and validate supplier payments in real-time</p>
+                            <div class="stats">
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3>Avg Response Time</h3>
+                                        <span id="avgResponseTime">--</span>
+                                        <small>milliseconds</small>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3>Payments Checked</h3>
+                                        <span id="totalPayments">0</span>
+                                        <small>total validations</small>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3>Fraud Detected</h3>
+                                        <span id="fraudDetected">0</span>
+                                        <small>high-risk payments</small>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3>Success Rate</h3>
+                                        <span id="successRate">--</span>
+                                        <small>accuracy</small>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3>Blocked Payments</h3>
+                                        <span id="blockedPayments">0</span>
+                                        <small>automatically blocked</small>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-content">
+                                        <h3>System Uptime</h3>
+                                        <span id="systemUptime">99.9%</span>
+                                        <small>reliability</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div class="stat-content">
-                                <h3>Payments Checked</h3>
-                                <span id="totalPayments">0</span>
-                                <small>total validations</small>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                                </svg>
-                            </div>
-                            <div class="stat-content">
-                                <h3>Fraud Detected</h3>
-                                <span id="fraudDetected">0</span>
-                                <small>high-risk payments</small>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                </svg>
-                            </div>
-                            <div class="stat-content">
-                                <h3>Success Rate</h3>
-                                <span id="successRate">--</span>
-                                <small>accuracy</small>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
-                                </svg>
-                            </div>
-                            <div class="stat-content">
-                                <h3>Blocked Payments</h3>
-                                <span id="blockedPayments">0</span>
-                                <small>automatically blocked</small>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                                </svg>
-                            </div>
-                            <div class="stat-content">
-                                <h3>System Uptime</h3>
-                                <span id="systemUptime">99.9%</span>
-                                <small>reliability</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
 
                 <!-- Payment Generation and Validation Form -->
                 <div class="validation-form">
@@ -324,18 +330,114 @@
                     </div>
                 </div>
 
-                <!-- Recent Validations -->
-                <div class="recent-validations">
-                    <div class="recent-header">
-                        <div class="recent-icon">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
+                        <!-- Recent Validations -->
+                        <div class="recent-validations">
+                            <div class="recent-header">
+                                <div class="recent-icon">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <h3>Recent Payment Validations</h3>
+                            </div>
+                            <div id="recentValidations" class="validation-list">
+                                <!-- Dynamic content will be added here -->
+                            </div>
                         </div>
-                        <h3>Recent Payment Validations</h3>
                     </div>
-                    <div id="recentValidations" class="validation-list">
-                        <!-- Dynamic content will be added here -->
+
+                    <!-- Right Sidebar - Real-Time Analytics -->
+                    <div class="analytics-sidebar">
+                        <div class="analytics-header">
+                            <div class="analytics-icon">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                            <h3>Live Analytics</h3>
+                            <div class="refresh-indicator">
+                                <span id="lastUpdate">Last updated: --</span>
+                                <div class="refresh-spinner" id="refreshSpinner" style="display: none;">
+                                    <div class="spinner"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Analytics Controls -->
+                        <div class="analytics-controls">
+                            <button id="pauseAnalytics" class="control-btn">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Pause
+                            </button>
+                            <button id="exportData" class="control-btn">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Export
+                            </button>
+                            <button id="refreshNow" class="control-btn">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
+                        
+                        <!-- Live Metrics -->
+                        <div class="live-metrics">
+                            <div class="metric-item">
+                                <span class="metric-label">Live Payments/min</span>
+                                <span id="livePaymentsPerMin" class="metric-value">0</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Avg Risk Score</span>
+                                <span id="avgRiskScore" class="metric-value">0</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Peak Response Time</span>
+                                <span id="peakResponseTime" class="metric-value">0ms</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">System Load</span>
+                                <span id="systemLoad" class="metric-value">Low</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Charts -->
+                        <div class="sidebar-charts">
+                            <div class="chart-container">
+                                <h4>Risk Distribution</h4>
+                                <canvas id="riskDistributionChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h4>Fraud Trends</h4>
+                                <canvas id="trendsChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h4>Performance</h4>
+                                <canvas id="responseTimeChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h4>System Health</h4>
+                                <canvas id="systemHealthChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Alerts Section -->
+                        <div class="alerts-section">
+                            <h4>Live Alerts</h4>
+                            <div id="alertsList" class="alerts-list">
+                                <div class="alert-item info">
+                                    <div class="alert-icon">ℹ️</div>
+                                    <div class="alert-content">
+                                        <div class="alert-title">System Online</div>
+                                        <div class="alert-time">Just now</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

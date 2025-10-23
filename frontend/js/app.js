@@ -14,6 +14,21 @@ class PaymentFraudDetectionApp {
             successRate: 0,
             blockedPayments: 0
         };
+        this.charts = {};
+        this.historicalData = {
+            riskDistribution: { GOOD: 0, REVIEW: 0, BLOCK: 0 },
+            trends: [],
+            responseTimes: [],
+            systemHealth: []
+        };
+        this.realTimeInterval = null;
+        this.lastUpdateTime = null;
+        this.isAnalyticsPaused = false;
+        this.paymentsPerMinute = 0;
+        this.peakResponseTime = 0;
+        this.avgRiskScore = 0;
+        this.systemLoad = 'Low';
+        this.alerts = [];
         this.statsUpdated = false; // Flag to prevent duplicate stat updates
         this.validationInProgress = false; // Flag to prevent duplicate validations
         this.reviewModalClicked = false; // Flag to prevent double-clicks on review modal
@@ -27,6 +42,8 @@ class PaymentFraudDetectionApp {
         this.checkAuthStatus();
         this.loadRecentValidations();
         this.setupAnimations();
+        this.initializeCharts();
+        this.startRealTimeUpdates();
     }
 
     setupEventListeners() {
@@ -1518,6 +1535,612 @@ class PaymentFraudDetectionApp {
             
         `;
         document.head.appendChild(style);
+    }
+
+    // ========================================
+    // REAL-TIME ANALYTICS METHODS
+    // ========================================
+
+    initializeCharts() {
+        // Initialize all charts when dashboard is shown
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js not loaded, charts will not be available');
+            return;
+        }
+
+        this.createRiskDistributionChart();
+        this.createTrendsChart();
+        this.createResponseTimeChart();
+        this.createSystemHealthChart();
+    }
+
+    createRiskDistributionChart() {
+        const ctx = document.getElementById('riskDistributionChart');
+        if (!ctx) return;
+
+        this.charts.riskDistribution = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['GOOD', 'REVIEW', 'BLOCK'],
+                datasets: [{
+                    data: [this.historicalData.riskDistribution.GOOD, 
+                           this.historicalData.riskDistribution.REVIEW, 
+                           this.historicalData.riskDistribution.BLOCK],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return `${context.label}: ${context.parsed} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    animateRotate: true,
+                    duration: 1000
+                }
+            }
+        });
+    }
+
+    createTrendsChart() {
+        const ctx = document.getElementById('trendsChart');
+        if (!ctx) return;
+
+        this.charts.trends = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: this.generateTimeLabels(24),
+                datasets: [{
+                    label: 'Total Payments',
+                    data: this.historicalData.trends,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                animation: {
+                    duration: 1000
+                }
+            }
+        });
+    }
+
+    createResponseTimeChart() {
+        const ctx = document.getElementById('responseTimeChart');
+        if (!ctx) return;
+
+        this.charts.responseTime = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: this.generateTimeLabels(12),
+                datasets: [{
+                    label: 'Response Time (ms)',
+                    data: this.historicalData.responseTimes,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: '#10b981',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                animation: {
+                    duration: 1000
+                }
+            }
+        });
+    }
+
+    createSystemHealthChart() {
+        const ctx = document.getElementById('systemHealthChart');
+        if (!ctx) return;
+
+        this.charts.systemHealth = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Uptime', 'Performance', 'Security', 'Reliability', 'Efficiency'],
+                datasets: [{
+                    label: 'System Health',
+                    data: [95, 88, 92, 90, 85],
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#3b82f6'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                animation: {
+                    duration: 1000
+                }
+            }
+        });
+    }
+
+    generateTimeLabels(hours) {
+        const labels = [];
+        const now = new Date();
+        for (let i = hours - 1; i >= 0; i--) {
+            const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+            labels.push(time.getHours().toString().padStart(2, '0') + ':00');
+        }
+        return labels;
+    }
+
+    startRealTimeUpdates() {
+        // Update every 30 seconds
+        this.realTimeInterval = setInterval(() => {
+            if (!this.isAnalyticsPaused) {
+                this.updateRealTimeData();
+            }
+        }, 30000);
+        
+        // Initial update
+        this.updateRealTimeData();
+        
+        // Setup control buttons
+        this.setupAnalyticsControls();
+    }
+
+    updateRealTimeData() {
+        this.showRefreshSpinner(true);
+        
+        // Update historical data
+        this.updateHistoricalData();
+        
+        // Update live metrics
+        this.updateLiveMetrics();
+        
+        // Update charts
+        this.updateCharts();
+        
+        // Check for alerts
+        this.checkForAlerts();
+        
+        // Update last update time
+        this.lastUpdateTime = new Date();
+        this.updateLastUpdateTime();
+        
+        // Show real-time indicator
+        this.showRealTimeIndicator();
+        
+        this.showRefreshSpinner(false);
+    }
+
+    updateHistoricalData() {
+        // Update risk distribution based on recent validations
+        const recentValidations = this.validations.slice(-50); // Last 50 validations
+        this.historicalData.riskDistribution = { GOOD: 0, REVIEW: 0, BLOCK: 0 };
+        
+        recentValidations.forEach(validation => {
+            const riskLevel = validation.riskLevel || 'GOOD';
+            if (this.historicalData.riskDistribution.hasOwnProperty(riskLevel)) {
+                this.historicalData.riskDistribution[riskLevel]++;
+            }
+        });
+
+        // Update trends (last 24 hours)
+        const now = new Date();
+        const currentHour = now.getHours();
+        if (this.historicalData.trends.length < 24) {
+            this.historicalData.trends = new Array(24).fill(0);
+        }
+        
+        // Count validations in current hour
+        const currentHourValidations = this.validations.filter(v => {
+            const validationTime = new Date(v.timestamp);
+            return validationTime.getHours() === currentHour;
+        }).length;
+        
+        this.historicalData.trends[currentHour] = currentHourValidations;
+
+        // Update response times
+        const recentResponseTimes = recentValidations
+            .filter(v => v.responseTime)
+            .map(v => v.responseTime)
+            .slice(-12);
+        
+        if (recentResponseTimes.length > 0) {
+            this.historicalData.responseTimes = recentResponseTimes;
+        }
+    }
+
+    updateCharts() {
+        // Update risk distribution chart
+        if (this.charts.riskDistribution) {
+            this.charts.riskDistribution.data.datasets[0].data = [
+                this.historicalData.riskDistribution.GOOD,
+                this.historicalData.riskDistribution.REVIEW,
+                this.historicalData.riskDistribution.BLOCK
+            ];
+            this.charts.riskDistribution.update('active');
+        }
+
+        // Update trends chart
+        if (this.charts.trends) {
+            this.charts.trends.data.datasets[0].data = this.historicalData.trends;
+            this.charts.trends.update('active');
+        }
+
+        // Update response time chart
+        if (this.charts.responseTime && this.historicalData.responseTimes.length > 0) {
+            this.charts.responseTime.data.datasets[0].data = this.historicalData.responseTimes;
+            this.charts.responseTime.update('active');
+        }
+    }
+
+    showRefreshSpinner(show) {
+        const spinner = document.getElementById('refreshSpinner');
+        if (spinner) {
+            spinner.style.display = show ? 'flex' : 'none';
+        }
+    }
+
+    updateLastUpdateTime() {
+        const lastUpdateElement = document.getElementById('lastUpdate');
+        if (lastUpdateElement && this.lastUpdateTime) {
+            const timeString = this.lastUpdateTime.toLocaleTimeString();
+            lastUpdateElement.textContent = `Last updated: ${timeString}`;
+        }
+    }
+
+    showRealTimeIndicator() {
+        // Remove existing indicator
+        const existingIndicator = document.querySelector('.real-time-indicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
+
+        // Create new indicator
+        const indicator = document.createElement('div');
+        indicator.className = 'real-time-indicator';
+        indicator.textContent = '🔄 Live Data Updated';
+        document.body.appendChild(indicator);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            if (indicator.parentNode) {
+                indicator.remove();
+            }
+        }, 3000);
+    }
+
+    // Enhanced stats update with animations
+    updateStatsDisplay() {
+        const elements = {
+            totalPayments: document.getElementById('totalPayments'),
+            fraudDetected: document.getElementById('fraudDetected'),
+            avgResponseTime: document.getElementById('avgResponseTime'),
+            successRate: document.getElementById('successRate'),
+            blockedPayments: document.getElementById('blockedPayments')
+        };
+
+        // Animate counter updates
+        Object.keys(elements).forEach(key => {
+            const element = elements[key];
+            if (element) {
+                const card = element.closest('.stat-card');
+                if (card) {
+                    card.classList.add('updated');
+                    setTimeout(() => card.classList.remove('updated'), 600);
+                }
+            }
+        });
+
+        // Update values
+        if (elements.totalPayments) elements.totalPayments.textContent = this.stats.totalPayments;
+        if (elements.fraudDetected) elements.fraudDetected.textContent = this.stats.fraudDetected;
+        if (elements.avgResponseTime) elements.avgResponseTime.textContent = `${this.stats.avgResponseTime}ms`;
+        if (elements.successRate) elements.successRate.textContent = `${this.stats.successRate}%`;
+        if (elements.blockedPayments) elements.blockedPayments.textContent = this.stats.blockedPayments || 0;
+    }
+
+    // Cleanup method
+    // Enhanced Analytics Methods
+    setupAnalyticsControls() {
+        const pauseBtn = document.getElementById('pauseAnalytics');
+        const exportBtn = document.getElementById('exportData');
+        const refreshBtn = document.getElementById('refreshNow');
+        
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => this.toggleAnalyticsPause());
+        }
+        
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportAnalyticsData());
+        }
+        
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.refreshAnalyticsNow());
+        }
+    }
+    
+    toggleAnalyticsPause() {
+        this.isAnalyticsPaused = !this.isAnalyticsPaused;
+        const pauseBtn = document.getElementById('pauseAnalytics');
+        
+        if (pauseBtn) {
+            if (this.isAnalyticsPaused) {
+                pauseBtn.innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Resume
+                `;
+                pauseBtn.style.background = '#10b981';
+                pauseBtn.style.color = 'white';
+            } else {
+                pauseBtn.innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Pause
+                `;
+                pauseBtn.style.background = '#f1f5f9';
+                pauseBtn.style.color = '#475569';
+            }
+        }
+    }
+    
+    exportAnalyticsData() {
+        const data = {
+            timestamp: new Date().toISOString(),
+            totalPayments: this.validations.length,
+            riskDistribution: this.historicalData.riskDistribution,
+            avgResponseTime: this.calculateAverageResponseTime(),
+            successRate: this.calculateSuccessRate(),
+            trends: this.historicalData.trends,
+            systemHealth: this.historicalData.systemHealth
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fraud-analytics-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.addAlert('Data exported successfully', 'info');
+    }
+    
+    refreshAnalyticsNow() {
+        this.updateRealTimeData();
+        this.addAlert('Analytics refreshed', 'info');
+    }
+    
+    updateLiveMetrics() {
+        // Calculate payments per minute
+        const now = new Date();
+        const oneMinuteAgo = new Date(now.getTime() - 60000);
+        const recentPayments = this.validations.filter(v => new Date(v.timestamp) > oneMinuteAgo);
+        this.paymentsPerMinute = recentPayments.length;
+        
+        // Calculate average risk score
+        if (this.validations.length > 0) {
+            const totalRisk = this.validations.reduce((sum, v) => sum + (v.riskScore || 0), 0);
+            this.avgRiskScore = Math.round(totalRisk / this.validations.length);
+        }
+        
+        // Calculate peak response time
+        const responseTimes = this.validations.map(v => v.responseTime || 0);
+        this.peakResponseTime = Math.max(...responseTimes, 0);
+        
+        // Determine system load
+        const avgResponseTime = this.calculateAverageResponseTime();
+        if (avgResponseTime > 2000) {
+            this.systemLoad = 'High';
+        } else if (avgResponseTime > 1000) {
+            this.systemLoad = 'Medium';
+        } else {
+            this.systemLoad = 'Low';
+        }
+        
+        // Update UI
+        this.updateLiveMetricsDisplay();
+    }
+    
+    updateLiveMetricsDisplay() {
+        const elements = {
+            livePaymentsPerMin: document.getElementById('livePaymentsPerMin'),
+            avgRiskScore: document.getElementById('avgRiskScore'),
+            peakResponseTime: document.getElementById('peakResponseTime'),
+            systemLoad: document.getElementById('systemLoad')
+        };
+        
+        if (elements.livePaymentsPerMin) {
+            elements.livePaymentsPerMin.textContent = this.paymentsPerMinute;
+        }
+        
+        if (elements.avgRiskScore) {
+            elements.avgRiskScore.textContent = this.avgRiskScore;
+        }
+        
+        if (elements.peakResponseTime) {
+            elements.peakResponseTime.textContent = `${this.peakResponseTime}ms`;
+        }
+        
+        if (elements.systemLoad) {
+            elements.systemLoad.textContent = this.systemLoad;
+            elements.systemLoad.className = `metric-value ${this.systemLoad.toLowerCase()}`;
+        }
+    }
+    
+    checkForAlerts() {
+        const avgResponseTime = this.calculateAverageResponseTime();
+        const successRate = this.calculateSuccessRate();
+        
+        // High response time alert
+        if (avgResponseTime > 2000 && !this.hasAlert('High response time detected')) {
+            this.addAlert('High response time detected', 'warning');
+        }
+        
+        // Low success rate alert
+        if (successRate < 80 && !this.hasAlert('Low success rate detected')) {
+            this.addAlert('Low success rate detected', 'warning');
+        }
+        
+        // High fraud detection alert
+        const recentBlocked = this.validations.slice(-10).filter(v => v.status === 'BLOCKED').length;
+        if (recentBlocked > 5 && !this.hasAlert('High fraud detection rate')) {
+            this.addAlert('High fraud detection rate', 'error');
+        }
+        
+        // System load alert
+        if (this.systemLoad === 'High' && !this.hasAlert('High system load')) {
+            this.addAlert('High system load', 'warning');
+        }
+    }
+    
+    hasAlert(message) {
+        return this.alerts.some(alert => alert.message === message && 
+            new Date() - new Date(alert.timestamp) < 300000); // 5 minutes
+    }
+    
+    addAlert(message, type = 'info') {
+        const alert = {
+            message,
+            type,
+            timestamp: new Date()
+        };
+        
+        this.alerts.unshift(alert);
+        this.alerts = this.alerts.slice(0, 10); // Keep only last 10 alerts
+        
+        this.updateAlertsDisplay();
+    }
+    
+    updateAlertsDisplay() {
+        const alertsList = document.getElementById('alertsList');
+        if (!alertsList) return;
+        
+        alertsList.innerHTML = this.alerts.map(alert => `
+            <div class="alert-item ${alert.type}">
+                <div class="alert-icon">${this.getAlertIcon(alert.type)}</div>
+                <div class="alert-content">
+                    <div class="alert-title">${alert.message}</div>
+                    <div class="alert-time">${this.formatTimeAgo(alert.timestamp)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    getAlertIcon(type) {
+        const icons = {
+            info: 'ℹ️',
+            warning: '⚠️',
+            error: '🚨'
+        };
+        return icons[type] || 'ℹ️';
+    }
+    
+    formatTimeAgo(timestamp) {
+        const now = new Date();
+        const diff = now - new Date(timestamp);
+        const minutes = Math.floor(diff / 60000);
+        
+        if (minutes < 1) return 'Just now';
+        if (minutes === 1) return '1 minute ago';
+        if (minutes < 60) return `${minutes} minutes ago`;
+        
+        const hours = Math.floor(minutes / 60);
+        if (hours === 1) return '1 hour ago';
+        if (hours < 24) return `${hours} hours ago`;
+        
+        const days = Math.floor(hours / 24);
+        return `${days} day${days > 1 ? 's' : ''} ago`;
+    }
+
+    destroy() {
+        if (this.realTimeInterval) {
+            clearInterval(this.realTimeInterval);
+        }
+        
+        // Destroy charts
+        Object.values(this.charts).forEach(chart => {
+            if (chart && typeof chart.destroy === 'function') {
+                chart.destroy();
+            }
+        });
     }
 }
 
