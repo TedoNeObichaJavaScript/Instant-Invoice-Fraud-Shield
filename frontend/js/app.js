@@ -2414,15 +2414,10 @@ ok
     // Enhanced Analytics Methods
     setupAnalyticsControls() {
         const pauseBtn = document.getElementById('pauseAnalytics');
-        const exportBtn = document.getElementById('exportData');
         const refreshBtn = document.getElementById('refreshNow');
         
         if (pauseBtn) {
             pauseBtn.addEventListener('click', () => this.toggleAnalyticsPause());
-        }
-        
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportAnalyticsData());
         }
         
         if (refreshBtn) {
@@ -2457,29 +2452,6 @@ ok
         }
     }
     
-    exportAnalyticsData() {
-        const data = {
-            timestamp: new Date().toISOString(),
-            totalPayments: this.validations.length,
-            riskDistribution: this.historicalData.riskDistribution,
-            avgResponseTime: this.calculateAverageResponseTime(),
-            successRate: this.calculateSuccessRate(),
-            trends: this.historicalData.trends,
-            systemHealth: this.historicalData.systemHealth
-        };
-        
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `fraud-analytics-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        this.addAlert('Data exported successfully', 'info');
-    }
     
     refreshAnalyticsNow() {
         this.updateRealTimeData();
