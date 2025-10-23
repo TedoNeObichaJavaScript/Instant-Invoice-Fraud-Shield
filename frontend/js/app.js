@@ -1673,6 +1673,20 @@ class PaymentFraudDetectionApp {
         return Math.round(totalTime / recentValidations.length);
     }
 
+    calculateSuccessRate() {
+        // Calculate success rate from recent validations
+        if (this.validations.length === 0) {
+            return 100; // Default to 100% if no validations
+        }
+        
+        const recentValidations = this.validations.slice(-20); // Last 20 validations
+        const successfulValidations = recentValidations.filter(validation => {
+            return validation.riskStatus === 'GOOD' || validation.riskStatus === 'REVIEW';
+        });
+        
+        return Math.round((successfulValidations.length / recentValidations.length) * 100);
+    }
+
     async createRiskDistributionChart() {
         console.log('Creating risk distribution chart...');
         const ctx = document.getElementById('riskDistributionChart');
